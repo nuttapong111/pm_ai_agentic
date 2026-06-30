@@ -1,0 +1,21 @@
+app:
+  name: PM Assistant
+  timezone_default: Asia/Bangkok
+  confirmation_timeout_minutes: 30
+
+adapters:
+  tracker: mock
+  email: mock
+  calendar: mock
+  document: local
+
+line:
+  welcome_message: |
+    สวัสดีครับ ผมเป็นผู้ช่วย PM
+    พิมพ์คุยกับผมได้เลย เช่น:
+    • สรุปประชุม — วางบันทึกการประชุม
+    • ลงงาน — เพิ่ม task ใหม่
+    • งานค้าง — ดูสถานะงาน
+
+document_numbering:
+  default_pattern: "{KEY}-{TYPE}-{SEQ:04d}"

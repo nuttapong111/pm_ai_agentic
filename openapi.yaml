@@ -1,0 +1,980 @@
+openapi: 3.1.0
+info:
+  title: PM Assistant API
+  version: 1.0.0
+  description: >
+    REST API สำหรับผู้ช่วย PM บน LINE — ใช้โดยหน้าเว็บตั้งค่า (LIFF) และรับ event จาก
+    LINE/แพลตฟอร์มภายนอก. ใช้คู่กับ schema.sql และ DESIGN_SPEC.md.
+    ทุก endpoint ฝั่ง LIFF ต้องมี bearer token (จาก LINE Login); endpoint /webhooks
+    ตรวจ signature แทน.
+
+servers:
+  - url: https://api.pmassistant.app/v1
+    description: production
+  - url: http://localhost:8000/v1
+    description: local dev
+
+tags:
+  - name: Webhooks
+  - name: Projects
+  - name: Members
+  - name: Connections
+  - name: Bindings
+  - name: Templates
+  - name: Numbering
+  - name: Documents
+  - name: Tasks
+  - name: Milestones
+  - name: Meetings
+  - name: Calendar
+  - name: Traceability
+  - name: Confirmations
+  - name: Notifications
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------------------------------------------------------------- Webhooks
+  /webhooks/line:
+    post:
+      tags: [Webhooks]
+      summary: รับ event จาก LINE
+      description: ตรวจ X-Line-Signature ก่อนประมวลผลเสมอ ไม่ใช้ bearer token
+      security: []
+      parameters:
+        - name: X-Line-Signature
+          in: header
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                destination: { type: string }
+                events:
+                  type: array
+                  items: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: รับแล้ว (ประมวลผลแบบ async) }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /webhooks/{provider}:
+    post:
+      tags: [Webhooks]
+      summary: รับ webhook จาก tracker (เช่นสถานะ Jira/ClickUp เปลี่ยน)
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string, enum: [jira, clickup] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        '200': { description: รับแล้ว }
+
+  # ---------------------------------------------------------------- Projects
+  /projects:
+    get:
+      tags: [Projects]
+      summary: รายการโปรเจกต์ของผู้ใช้
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Project' }
+    post:
+      tags: [Projects]
+      summary: สร้างโปรเจกต์
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectCreate' }
+      responses:
+        '201':
+          description: สร้างแล้ว
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Projects]
+      summary: รายละเอียดโปรเจกต์
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Projects]
+      summary: แก้ไขโปรเจกต์
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectCreate' }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+    delete:
+      tags: [Projects]
+      summary: เก็บถาวร (archive) โปรเจกต์
+      responses:
+        '204': { description: สำเร็จ }
+
+  /projects/{projectId}/dashboard:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Projects]
+      summary: ข้อมูลแดชบอร์ดภาพรวม (หน้า W2)
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardSummary' }
+
+  # ---------------------------------------------------------------- Members
+  /projects/{projectId}/members:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Members]
+      summary: รายชื่อสมาชิก
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Member' }
+    post:
+      tags: [Members]
+      summary: เพิ่มสมาชิก
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MemberInput' }
+      responses:
+        '201':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Member' }
+
+  /members/{memberId}:
+    parameters:
+      - name: memberId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Members]
+      summary: แก้ไขสมาชิก
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MemberInput' }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Member' }
+    delete:
+      tags: [Members]
+      summary: ลบสมาชิก
+      responses:
+        '204': { description: สำเร็จ }
+
+  # ------------------------------------------------------------ Connections
+  /connections:
+    get:
+      tags: [Connections]
+      summary: บัญชีแพลตฟอร์มที่เชื่อมไว้
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Connection' }
+
+  /connections/authorize:
+    post:
+      tags: [Connections]
+      summary: เริ่มเชื่อมต่อแพลตฟอร์ม (คืน URL หน้าอนุญาตสิทธิ์)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { $ref: '#/components/schemas/ConnectionType' }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authorizationUrl: { type: string, format: uri }
+
+  /connections/oauth/callback:
+    get:
+      tags: [Connections]
+      summary: callback ของ OAuth (แลก code เป็น token แล้วบันทึก connection)
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema: { type: string }
+        - name: state
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: redirect กลับหน้า LIFF }
+
+  /connections/{connectionId}:
+    parameters:
+      - name: connectionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Connections]
+      summary: ยกเลิกการเชื่อมต่อ
+      responses:
+        '204': { description: สำเร็จ }
+
+  # --------------------------------------------------------------- Bindings
+  /projects/{projectId}/bindings:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Bindings]
+      summary: ปลายทางของแต่ละ capability
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Binding' }
+
+  /projects/{projectId}/bindings/{capability}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - name: capability
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/Capability' }
+    put:
+      tags: [Bindings]
+      summary: ตั้งว่า capability นี้ใช้ connection ไหน
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [connectionId]
+              properties:
+                connectionId: { type: string, format: uuid }
+                config: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Binding' }
+
+  # -------------------------------------------------------------- Templates
+  /projects/{projectId}/templates:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Templates]
+      summary: เทมเพลตของโครงการ
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Template' }
+    post:
+      tags: [Templates]
+      summary: อัปโหลดเทมเพลต (.docx)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [wpType, file]
+              properties:
+                wpType: { $ref: '#/components/schemas/WorkProductType' }
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Template' }
+
+  /templates/{templateId}:
+    parameters:
+      - name: templateId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Templates]
+      summary: ลบเทมเพลต
+      responses:
+        '204': { description: สำเร็จ }
+
+  # -------------------------------------------------------------- Numbering
+  /projects/{projectId}/numbering:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Numbering]
+      summary: กฎเลขรันเอกสารต่อชนิด
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NumberingRule' }
+
+  /projects/{projectId}/numbering/{wpType}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - name: wpType
+        in: path
+        required: true
+        schema: { $ref: '#/components/schemas/WorkProductType' }
+    put:
+      tags: [Numbering]
+      summary: ตั้งรูปแบบเลขรัน
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prefix: { type: string, example: MIN }
+                pattern: { type: string, example: '{KEY}-{TYPE}-{SEQ:04d}' }
+                resetPeriod: { type: string, enum: [none, yearly] }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NumberingRule' }
+
+  # -------------------------------------------------------------- Documents
+  /projects/{projectId}/documents:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - name: wpType
+        in: query
+        schema: { $ref: '#/components/schemas/WorkProductType' }
+      - $ref: '#/components/parameters/limit'
+      - $ref: '#/components/parameters/cursor'
+    get:
+      tags: [Documents]
+      summary: คลังเอกสาร (หน้า W8)
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Document' }
+                  nextCursor: { type: string, nullable: true }
+
+  /documents/{documentId}/download:
+    parameters:
+      - name: documentId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Documents]
+      summary: ลิงก์ดาวน์โหลดเอกสาร (signed URL)
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloadUrl: { type: string, format: uri }
+
+  # ------------------------------------------------------------------ Tasks
+  /projects/{projectId}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - name: status
+        in: query
+        schema: { $ref: '#/components/schemas/TaskStatus' }
+      - name: dueBefore
+        in: query
+        schema: { type: string, format: date }
+      - name: milestoneId
+        in: query
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Tasks]
+      summary: รายการงาน (ใช้โดยแดชบอร์ด/ถาม-ตอบ)
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Task' }
+    post:
+      tags: [Tasks]
+      summary: สร้างงาน (ปกติผ่านแชท แต่เปิด REST ไว้ด้วย)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskInput' }
+      responses:
+        '201':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+
+  /tasks/{taskId}:
+    parameters:
+      - name: taskId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Tasks]
+      summary: แก้ไขงาน
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskInput' }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+
+  # ------------------------------------------------------------- Milestones
+  /projects/{projectId}/milestones:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Milestones]
+      summary: รายการ milestone
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Milestone' }
+    post:
+      tags: [Milestones]
+      summary: สร้าง milestone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MilestoneInput' }
+      responses:
+        '201':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Milestone' }
+
+  # --------------------------------------------------------------- Meetings
+  /projects/{projectId}/meetings:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Meetings]
+      summary: รายการบันทึกการประชุม
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Meeting' }
+
+  # --------------------------------------------------------------- Calendar
+  /projects/{projectId}/events:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Calendar]
+      summary: รายการนัดหมาย
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CalendarEvent' }
+    post:
+      tags: [Calendar]
+      summary: สร้างนัดหมาย (recurrence + Meet link + invite)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CalendarEventInput' }
+      responses:
+        '201':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CalendarEvent' }
+
+  # ----------------------------------------------------------- Traceability
+  /projects/{projectId}/traceability:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags: [Traceability]
+      summary: ความครอบคลุม req ↔ task ↔ test (หน้า W9)
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TraceabilityCoverage' }
+
+  /projects/{projectId}/traceability/links:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    post:
+      tags: [Traceability]
+      summary: ผูก requirement เข้ากับ task หรือ test case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requirementId]
+              properties:
+                requirementId: { type: string, format: uuid }
+                taskId: { type: string, format: uuid, nullable: true }
+                testCaseId: { type: string, format: uuid, nullable: true }
+      responses:
+        '201': { description: สำเร็จ }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ----------------------------------------------------------- Confirmations
+  /confirmations/{confirmationId}/confirm:
+    parameters:
+      - name: confirmationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [Confirmations]
+      summary: ยืนยันร่างเพื่อ execute (สะท้อน postback จาก LINE)
+      responses:
+        '200':
+          description: ผลการ execute
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExecutionResult' }
+        '409':
+          description: ร่างหมดอายุหรือถูกจัดการไปแล้ว
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /confirmations/{confirmationId}/cancel:
+    parameters:
+      - name: confirmationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [Confirmations]
+      summary: ยกเลิกร่าง
+      responses:
+        '204': { description: สำเร็จ }
+
+  # ----------------------------------------------------------- Notifications
+  /me/notification-preferences:
+    get:
+      tags: [Notifications]
+      summary: การตั้งค่าการแจ้งเตือนของผู้ใช้
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+    put:
+      tags: [Notifications]
+      summary: บันทึกการตั้งค่าการแจ้งเตือน
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPreferences' }
+      responses:
+        '200':
+          description: สำเร็จ
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+
+# =============================================================== components
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: token ที่ออกหลังตรวจ LINE Login ID token จากฝั่ง LIFF
+
+  parameters:
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+
+  responses:
+    NotFound:
+      description: ไม่พบข้อมูล
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: สิทธิ์ไม่พอ / signature ไม่ถูกต้อง
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: ข้อมูลไม่ผ่านการตรวจสอบ
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    # ---- enums (ตรงกับ schema.sql) ----
+    Capability:
+      type: string
+      enum: [tasks, calendar, docs, email, notify]
+    ConnectionType:
+      type: string
+      enum: [jira, clickup, google, gmail, line, other]
+    WorkProductType:
+      type: string
+      enum: [meeting_record, memo, project_plan, requirements, traceability, test_case, change_request]
+    TaskStatus:
+      type: string
+      enum: [todo, in_progress, blocked, done, cancelled]
+    TaskPriority:
+      type: string
+      enum: [low, medium, high, urgent]
+    MilestoneStatus:
+      type: string
+      enum: [open, at_risk, done]
+    DocStatus:
+      type: string
+      enum: [draft, issued]
+
+    # ---- error ----
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: not_found }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    # ---- projects ----
+    Project:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        key: { type: string, example: HR }
+        name: { type: string, example: HR system }
+        isArchived: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    ProjectCreate:
+      type: object
+      required: [key, name]
+      properties:
+        key: { type: string, maxLength: 10 }
+        name: { type: string }
+
+    DashboardSummary:
+      type: object
+      properties:
+        taskCounts:
+          type: object
+          properties:
+            total: { type: integer }
+            pending: { type: integer }
+            done: { type: integer }
+        nextMilestone: { $ref: '#/components/schemas/Milestone' }
+        dueSoon:
+          type: array
+          items: { $ref: '#/components/schemas/Task' }
+        nextEvent: { $ref: '#/components/schemas/CalendarEvent' }
+
+    # ---- members ----
+    Member:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email, nullable: true }
+        role: { type: string, nullable: true }
+    MemberInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string }
+
+    # ---- connections / bindings ----
+    Connection:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/ConnectionType' }
+        displayName: { type: string }
+        status: { type: string, enum: [connected, expired, error, revoked] }
+        expiresAt: { type: string, format: date-time, nullable: true }
+    Binding:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        capability: { $ref: '#/components/schemas/Capability' }
+        connectionId: { type: string, format: uuid }
+        config: { type: object, additionalProperties: true }
+
+    # ---- templates / numbering ----
+    Template:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        wpType: { $ref: '#/components/schemas/WorkProductType' }
+        version: { type: integer }
+        uploadedAt: { type: string, format: date-time }
+    NumberingRule:
+      type: object
+      properties:
+        wpType: { $ref: '#/components/schemas/WorkProductType' }
+        prefix: { type: string }
+        pattern: { type: string }
+        currentSeq: { type: integer }
+        resetPeriod: { type: string, enum: [none, yearly] }
+
+    # ---- documents ----
+    Document:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        wpType: { $ref: '#/components/schemas/WorkProductType' }
+        docNumber: { type: string, nullable: true, example: HR-MIN-0007 }
+        title: { type: string }
+        status: { $ref: '#/components/schemas/DocStatus' }
+        createdAt: { type: string, format: date-time }
+
+    # ---- tasks / milestones ----
+    Task:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        assigneeId: { type: string, format: uuid, nullable: true }
+        dueDate: { type: string, format: date, nullable: true }
+        priority: { $ref: '#/components/schemas/TaskPriority' }
+        status: { $ref: '#/components/schemas/TaskStatus' }
+        milestoneId: { type: string, format: uuid, nullable: true }
+        externalRef:
+          type: object
+          description: ลิงก์ไป card บนแพลตฟอร์ม
+          properties:
+            provider: { type: string }
+            key: { type: string, example: HR-128 }
+            url: { type: string, format: uri }
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        assigneeId: { type: string, format: uuid }
+        dueDate: { type: string, format: date }
+        priority: { $ref: '#/components/schemas/TaskPriority' }
+        milestoneId: { type: string, format: uuid }
+    Milestone:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        targetDate: { type: string, format: date, nullable: true }
+        status: { $ref: '#/components/schemas/MilestoneStatus' }
+        linkedTaskCount: { type: integer }
+    MilestoneInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        targetDate: { type: string, format: date }
+
+    # ---- meetings ----
+    Meeting:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        meetingDate: { type: string, format: date, nullable: true }
+        decisions:
+          type: array
+          items: { type: string }
+        actionItems:
+          type: array
+          items:
+            type: object
+            properties:
+              description: { type: string }
+              ownerId: { type: string, format: uuid, nullable: true }
+              dueDate: { type: string, format: date, nullable: true }
+              isInferred: { type: boolean, description: ระบบเดา }
+
+    # ---- calendar ----
+    CalendarEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time, nullable: true }
+        recurrenceRule: { type: string, nullable: true, example: 'FREQ=WEEKLY;BYDAY=MO' }
+        meetLink: { type: string, format: uri, nullable: true }
+    CalendarEventInput:
+      type: object
+      required: [title, startsAt]
+      properties:
+        title: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        recurrenceRule: { type: string }
+        attendeeMemberIds:
+          type: array
+          items: { type: string, format: uuid }
+        createMeetLink: { type: boolean, default: true }
+
+    # ---- traceability ----
+    TraceabilityCoverage:
+      type: object
+      properties:
+        requirementId: { type: string, format: uuid }
+        code: { type: string, example: REQ-012 }
+        title: { type: string }
+        coverage: { type: string, enum: [covered, missing_test, no_task] }
+        taskKeys:
+          type: array
+          items: { type: string }
+        testCaseCodes:
+          type: array
+          items: { type: string }
+
+    # ---- confirmations ----
+    ExecutionResult:
+      type: object
+      properties:
+        status: { type: string, enum: [success, partial, failed] }
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              tool: { type: string, example: clickup }
+              ok: { type: boolean }
+              ref: { type: string, nullable: true, example: HR-128 }
+              error: { type: string, nullable: true }
+
+    # ---- notifications ----
+    NotificationPreferences:
+      type: object
+      properties:
+        enabledTypes:
+          type: array
+          items:
+            type: string
+            enum: [due_soon, overdue, meeting_soon, status_change, milestone_due]
+        quietHoursStart: { type: string, example: '22:00' }
+        quietHoursEnd: { type: string, example: '07:00' }

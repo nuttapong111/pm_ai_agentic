@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM Assistant — Screen Designs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --surface-0:#ffffff; --surface-1:#eceff2; --surface-2:#f7f9fb; --border:#e3e6ea;
+  --text-primary:#1f2937; --text-secondary:#6b7280; --text-muted:#9ca3af; --text-accent:#2563eb;
+  --text-success:#15803d; --text-warning:#b45309; --text-danger:#dc2626;
+  --bg-accent:#eef2ff; --bg-success:#dcfce7; --bg-warning:#fef3c7; --bg-danger:#fee2e2;
+  --fill-success:#22c55e;
+  --font-sans:system-ui,-apple-system,"Segoe UI","Noto Sans Thai",sans-serif;
+  --font-mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-1);font-family:var(--font-sans);color:var(--text-primary);padding:32px 20px 60px;}
+h1{font-size:22px;margin:0 0 4px;}
+.lead{color:var(--text-secondary);font-size:14px;margin:0 0 36px;max-width:680px;line-height:1.6;}
+h2.group{font-size:15px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin:40px 0 18px;border-bottom:1px solid var(--border);padding-bottom:8px;}
+.gallery{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start;}
+.screen{width:300px;}
+.caption{margin-top:9px;font-size:12px;color:var(--text-secondary);line-height:1.4;}
+.caption b{color:var(--text-primary);font-weight:600;}
+.phone{width:300px;border:7px solid #1f2733;border-radius:26px;overflow:hidden;background:var(--surface-0);}
+.phone.chat{background:#f3f5f7;}
+/* LINE chat */
+.line-header{background:#06C755;color:#fff;display:flex;align-items:center;gap:9px;padding:11px 13px;}
+.line-header .name{font-size:14px;font-weight:500;} .line-header .sub{font-size:10px;opacity:.85;}
+.hdr-av{width:27px;height:27px;border-radius:50%;background:#fff;color:#06C755;display:flex;align-items:center;justify-content:center;}
+.av{width:26px;height:26px;border-radius:50%;background:#06C755;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
+.chat-area{padding:12px;display:flex;flex-direction:column;gap:9px;}
+.b-user{align-self:flex-end;max-width:82%;background:#cdeccb;color:#14532d;font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:13px 13px 3px 13px;}
+.row-bot{display:flex;gap:7px;max-width:94%;}
+.b-bot{background:#fff;border:.5px solid #e3e6ea;color:#1f2937;font-size:12.5px;line-height:1.5;padding:7px 10px;border-radius:13px 13px 13px 3px;}
+.card{background:#fff;border:.5px solid #e3e6ea;border-radius:13px;overflow:hidden;flex:1;}
+.card-head{color:#fff;padding:8px 12px;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;}
+.card-body{padding:10px 12px;}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:.5px solid #eef0f2;font-size:12px;}
+.kv .k{color:#6b7280;} .kv .v{color:#1f2937;text-align:right;}
+.meta{font-size:11px;color:#6b7280;}
+.chip{font-size:10px;padding:1px 7px;border-radius:8px;display:inline-block;}
+.chip.owner{background:#e0e7ff;color:#3730a3;} .chip.due{background:#fef3c7;color:#92400e;} .chip.guess{background:#fde8d0;color:#9a3412;}
+.chip.hi{background:#fde2e2;color:#a32d2d;}
+.quicks{display:flex;gap:6px;flex-wrap:wrap;padding:7px 12px;}
+.quicks.bg{background:#eef1f4;} .quicks.pad{padding-left:35px;}
+.q{background:#fff;color:#374151;border:.5px solid #d6dbe0;font-size:11.5px;padding:5px 11px;border-radius:15px;display:inline-flex;align-items:center;gap:4px;}
+.q.primary{background:#06C755;color:#fff;border:none;}
+.input-bar{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#fff;border-top:.5px solid #e3e6ea;color:#8b94a0;}
+.input-bar .field{flex:1;background:#f0f2f5;border-radius:15px;padding:6px 12px;font-size:11.5px;color:#9aa2ad;}
+.rmenu{background:#fff;border-top:.5px solid #e3e6ea;display:grid;grid-template-columns:repeat(3,1fr);}
+.rmenu>div{padding:14px 6px;text-align:center;border-right:.5px solid #eef0f2;border-bottom:.5px solid #eef0f2;}
+.rmenu .lbl{font-size:10.5px;color:#374151;margin-top:5px;}
+/* LIFF admin */
+.liff-header{background:var(--surface-2);border-bottom:.5px solid var(--border);display:flex;align-items:center;gap:9px;padding:12px 13px;}
+.liff-header .name{font-size:14px;font-weight:500;color:var(--text-primary);} .liff-header .sub{font-size:10px;color:var(--text-secondary);}
+.admin-body{padding:13px;}
+.sec-label{font-size:11px;color:var(--text-secondary);margin:0 0 6px;}
+.list{border:.5px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);margin-bottom:15px;}
+.list-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:.5px solid var(--border);font-size:12.5px;color:var(--text-primary);}
+.list-row:last-child{border-bottom:none;}
+.grow{flex:1;} .sub2{font-size:10.5px;color:var(--text-secondary);}
+.s-success{font-size:10.5px;background:var(--bg-success);color:var(--text-success);padding:2px 8px;border-radius:8px;}
+.s-muted{font-size:10.5px;color:var(--text-muted);padding:2px 8px;}
+.s-accent{font-size:10.5px;background:var(--bg-accent);color:var(--text-accent);padding:2px 8px;border-radius:8px;}
+.s-warn{font-size:10.5px;background:var(--bg-warning);color:var(--text-warning);padding:2px 8px;border-radius:8px;}
+.s-danger{font-size:10.5px;background:var(--bg-danger);color:var(--text-danger);padding:2px 8px;border-radius:8px;}
+.mono{font-family:var(--font-mono);}
+.muted{color:var(--text-secondary);} .accent{color:var(--text-accent);}
+.toggle{width:34px;height:19px;border-radius:10px;position:relative;display:inline-block;flex-shrink:0;}
+.toggle.on{background:var(--fill-success);} .toggle.on::after{content:"";position:absolute;top:2px;right:2px;width:15px;height:15px;background:#fff;border-radius:50%;}
+.toggle.off{background:var(--surface-1);border:.5px solid var(--border);} .toggle.off::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;background:var(--text-muted);border-radius:50%;}
+.stats{display:flex;gap:7px;margin-bottom:15px;}
+.stat{flex:1;background:var(--surface-2);border:.5px solid var(--border);border-radius:9px;padding:9px;text-align:center;}
+.stat .num{font-size:18px;font-weight:600;} .stat .lbl{font-size:10.5px;color:var(--text-secondary);}
+.link-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px;color:var(--text-accent);font-size:12.5px;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.tab{font-size:11.5px;padding:4px 10px;border-radius:12px;} .tab.on{background:var(--bg-accent);color:var(--text-accent);} .tab.off{background:var(--surface-2);color:var(--text-secondary);border:.5px solid var(--border);}
+.bar{height:7px;background:var(--surface-1);border-radius:4px;overflow:hidden;} .bar>span{display:block;height:100%;background:var(--fill-success);}
+.box{background:var(--surface-2);border:.5px solid var(--border);border-radius:10px;padding:11px 12px;margin-bottom:15px;}
+.trow{border:.5px solid var(--border);border-radius:11px;padding:11px 12px;background:var(--surface-2);margin-bottom:10px;}
+i.ti{font-size:16px;line-height:1;}
+</style>
+</head>
+<body>
+<h1>PM Assistant — Screen Designs</h1>
+<p class="lead">แคตตาล็อกหน้าจอทั้งหมดของผู้ช่วย PM บน LINE — ฝั่งแชท 9 หน้า และฝั่งเว็บตั้งค่า (LIFF) 10 หน้า ใช้คู่กับ DESIGN_SPEC.md, schema.sql และ openapi.yaml</p>
+
+<h2 class="group">ฝั่งแชท LINE</h2>
+<div class="gallery">
+
+  <!-- C1 onboarding -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">ออนไลน์</div></div></div>
+    <div class="chat-area">
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card">
+        <div class="card-body"><div style="font-size:13.5px;font-weight:500;margin-bottom:3px;">สวัสดีครับ ผมเป็นผู้ช่วย PM</div><div class="meta" style="margin-bottom:9px;">พิมพ์คุยกับผมได้เลย ผมช่วยงานเหล่านี้</div>
+          <div style="font-size:12px;line-height:1.95;color:#374151;">
+            <div><i class="ti ti-notes" style="color:#185fa5;font-size:14px;vertical-align:-2px;margin-right:5px;"></i>สรุปประชุม + ส่งเมล</div>
+            <div><i class="ti ti-clipboard-plus" style="color:#534ab7;font-size:14px;vertical-align:-2px;margin-right:5px;"></i>เปิดงานเข้า Jira / ClickUp</div>
+            <div><i class="ti ti-calendar-plus" style="color:#0f6e56;font-size:14px;vertical-align:-2px;margin-right:5px;"></i>นัดหมาย + ลิงก์ประชุม</div>
+            <div><i class="ti ti-bell" style="color:#854f0b;font-size:14px;vertical-align:-2px;margin-right:5px;"></i>เตือนงานใกล้ครบกำหนด</div>
+          </div></div>
+        <div style="background:#06C755;color:#fff;text-align:center;padding:10px;font-size:12.5px;font-weight:500;"><i class="ti ti-settings" style="font-size:15px;vertical-align:-2px;margin-right:5px;"></i>ตั้งค่าโปรเจกต์แรก</div></div></div>
+      <div class="quicks pad"><span class="q">ดูวิธีใช้</span><span class="q">เริ่มพิมพ์เลย</span></div>
+    </div>
+  </div><div class="caption"><b>C1 · ต้อนรับครั้งแรก</b> — แนะนำตัว + ปุ่มตั้งค่า</div></div>
+
+  <!-- C2 meeting -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">ออนไลน์</div></div><i class="ti ti-menu-2"></i></div>
+    <div class="chat-area">
+      <div class="b-user">ประชุม kickoff โปรเจกต์ HR เช้านี้ เฟสแรกทำหน้า login สมชายทำ wireframe ส่งศุกร์ …</div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="b-bot">รับทราบครับ สรุปเป็นบันทึกการประชุมให้แล้ว</div></div>
+      <div class="row-bot" style="margin-left:33px;"><div class="card">
+        <div class="card-head" style="background:#0f6e56;"><i class="ti ti-file-text"></i>บันทึกการประชุม (ร่าง)</div>
+        <div class="card-body">
+          <div class="meta" style="margin-bottom:8px;">29 มิ.ย. 2026 · ผู้เข้าร่วม 4 คน · HR</div>
+          <div style="font-size:12px;font-weight:500;color:#374151;margin-bottom:3px;">มติที่ประชุม</div>
+          <div style="font-size:11.5px;color:#4b5563;line-height:1.6;margin-bottom:9px;">• เฟสแรกโฟกัสหน้า login<br>• ใช้ design system เดิม</div>
+          <div style="font-size:12px;font-weight:500;color:#374151;margin-bottom:4px;">งานที่ต้องทำ (3)</div>
+          <div style="border-top:.5px solid #eef0f2;padding:6px 0;"><div style="font-size:11.5px;margin-bottom:4px;">ทำ wireframe หน้า login</div><span class="chip owner">สมชาย</span> <span class="chip due">4 ก.ค.</span></div>
+          <div style="border-top:.5px solid #eef0f2;padding:6px 0;"><div style="font-size:11.5px;margin-bottom:4px;">เตรียม API spec</div><span class="chip owner">อร</span> <span class="chip due">6 ก.ค.</span></div>
+          <div style="border-top:.5px solid #eef0f2;padding:6px 0;"><div style="font-size:11.5px;margin-bottom:4px;">ตั้งค่า CI/CD <span class="chip guess">ระบบเดา</span></div><span class="chip owner">ปิติ</span> <span class="chip due">8 ก.ค.</span></div>
+          <div style="border-top:.5px solid #eef0f2;margin-top:3px;padding-top:6px;font-size:10px;color:#9ca3af;"><i class="ti ti-shield-check" style="font-size:12px;vertical-align:-2px;margin-right:4px;"></i>ISO 29110 · Meeting Record</div>
+        </div></div></div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="b-bot">ตรวจแล้วเลือกด้านล่างได้เลยครับ</div></div>
+    </div>
+    <div class="quicks bg"><span class="q primary"><i class="ti ti-check"></i>ยืนยันส่งเมล</span><span class="q"><i class="ti ti-edit"></i>แก้ไข</span><span class="q"><i class="ti ti-x"></i>ยกเลิก</span></div>
+    <div class="input-bar"><i class="ti ti-plus" style="font-size:19px;"></i><div class="field">พิมพ์ข้อความ…</div><i class="ti ti-microphone" style="font-size:18px;"></i></div>
+  </div><div class="caption"><b>C2 · สรุปประชุม</b> — ร่าง Meeting Record + ยืนยันส่งเมล</div></div>
+
+  <!-- C3 task -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div><i class="ti ti-menu-2"></i></div>
+    <div class="chat-area">
+      <div class="b-user">เพิ่มงาน: ทำ API login ให้สมชาย เสร็จศุกร์นี้ ความสำคัญสูง</div>
+      <div class="row-bot" style="margin-left:33px;"><div class="card">
+        <div class="card-head" style="background:#185fa5;"><i class="ti ti-clipboard-check"></i>งานใหม่ (ร่าง)</div>
+        <div class="card-body"><div style="font-size:13.5px;font-weight:500;margin-bottom:8px;">ทำ API หน้า login</div>
+          <div class="kv"><span class="k">ผู้รับผิดชอบ</span><span class="v">สมชาย</span></div>
+          <div class="kv"><span class="k">กำหนดส่ง</span><span class="v">4 ก.ค. 2026</span></div>
+          <div class="kv"><span class="k">ความสำคัญ</span><span class="chip hi">สูง</span></div>
+          <div class="kv"><span class="k">ปลายทาง</span><span class="s-accent"><i class="ti ti-brand-trello" style="font-size:12px;vertical-align:-2px;"></i> ClickUp + Plan</span></div>
+        </div></div></div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="b-bot">จะเปิด card ใน ClickUp และเพิ่มแถวใน Project Plan ยืนยันไหมครับ</div></div>
+    </div>
+    <div class="quicks bg"><span class="q primary"><i class="ti ti-check"></i>ยืนยันเปิด card</span><span class="q"><i class="ti ti-switch-horizontal"></i>เปลี่ยนปลายทาง</span><span class="q"><i class="ti ti-edit"></i>แก้ไข</span></div>
+    <div class="input-bar"><i class="ti ti-plus" style="font-size:19px;"></i><div class="field">พิมพ์ข้อความ…</div><i class="ti ti-microphone" style="font-size:18px;"></i></div>
+  </div><div class="caption"><b>C3 · ลงงาน</b> — ร่างงาน + ช่องปลายทาง (สลับ tracker ได้)</div></div>
+
+  <!-- C4 query -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div></div>
+    <div class="chat-area">
+      <div class="b-user">งานค้างของ HR มีอะไรบ้าง</div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card">
+        <div style="padding:8px 12px;font-size:12.5px;font-weight:500;border-bottom:.5px solid #eef0f2;">งานค้าง (3)</div>
+        <div style="padding:8px 12px;border-bottom:.5px solid #eef0f2;"><div style="font-size:12.5px;">ทำ wireframe หน้า login</div><div class="meta" style="margin-top:2px;">สมชาย · <span style="color:#dc2626;">เลยกำหนด 2 วัน</span></div></div>
+        <div style="padding:8px 12px;border-bottom:.5px solid #eef0f2;"><div style="font-size:12.5px;">เตรียม API spec</div><div class="meta" style="margin-top:2px;">อร · <span style="color:#b45309;">ครบกำหนดพรุ่งนี้</span></div></div>
+        <div style="padding:8px 12px;"><div style="font-size:12.5px;">ตั้งค่า CI/CD</div><div class="meta" style="margin-top:2px;">ปิติ · 8 ก.ค.</div></div>
+      </div></div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="b-bot">ประชุมสัปดาห์นี้: Sprint review ศุกร์ 14:00</div></div>
+      <div class="quicks pad"><span class="q">เฉพาะเลยกำหนด</span><span class="q">ประชุมทั้งหมด</span></div>
+    </div>
+  </div><div class="caption"><b>C4 · ถาม-ตอบ</b> — ดึงงานค้าง/ประชุม ไฮไลต์เลยกำหนด</div></div>
+
+  <!-- C5 milestone -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div></div>
+    <div class="chat-area">
+      <div class="b-user">ตั้ง milestone ปิดเฟส 1 วันที่ 31 ก.ค.</div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card">
+        <div class="card-head" style="background:#534ab7;"><i class="ti ti-flag"></i>Milestone (ร่าง)</div>
+        <div class="card-body"><div style="font-size:13.5px;font-weight:500;margin-bottom:8px;">ปิดเฟส 1</div>
+          <div class="kv"><span class="k">เป้าหมาย</span><span class="v">31 ก.ค. 2026</span></div>
+          <div class="kv"><span class="k">งานที่ผูก</span><span class="v">5 รายการ</span></div>
+          <div class="kv"><span class="k">สถานะ</span><span class="chip owner">เปิดอยู่</span></div>
+        </div></div></div>
+      <div class="quicks pad"><span class="q primary"><i class="ti ti-check"></i>ยืนยัน</span><span class="q">ผูกงานเพิ่ม</span><span class="q">แก้ไข</span></div>
+    </div>
+  </div><div class="caption"><b>C5 · Milestone</b> — สร้าง + ผูกงาน</div></div>
+
+  <!-- C6 calendar -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div></div>
+    <div class="chat-area">
+      <div class="b-user">ตั้ง weekly sprint meeting ทุกจันทร์ 10:00</div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card">
+        <div class="card-head" style="background:#185fa5;"><i class="ti ti-calendar-plus"></i>นัดหมาย (ร่าง)</div>
+        <div class="card-body"><div style="font-size:13.5px;font-weight:500;margin-bottom:8px;">Sprint planning</div>
+          <div class="kv"><span class="k">เวลา</span><span class="v">ทุกจันทร์ 10:00–10:30</span></div>
+          <div class="kv"><span class="k">ผู้เข้าร่วม</span><span class="v"><span class="chip owner">สมชาย</span> <span class="chip owner">อร</span> <span class="chip owner">ปิติ</span></span></div>
+          <div class="kv"><span class="k">ลิงก์ประชุม</span><span class="v" style="color:#16a34a;"><i class="ti ti-video" style="font-size:12px;vertical-align:-2px;"></i> สร้าง Google Meet</span></div>
+          <div class="kv"><span class="k">ปลายทาง</span><span class="v">Google Calendar</span></div>
+        </div></div></div>
+      <div class="quicks pad"><span class="q primary"><i class="ti ti-check"></i>ยืนยันสร้าง</span><span class="q">เปลี่ยนเวลา</span><span class="q">แก้ผู้เข้าร่วม</span></div>
+    </div>
+  </div><div class="caption"><b>C6 · นัดหมาย</b> — ประชุมประจำ + Meet link + invite</div></div>
+
+  <!-- C7 reminder -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div></div>
+    <div class="chat-area">
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card">
+        <div class="card-body"><div style="display:flex;align-items:center;gap:6px;color:#854f0b;font-size:12.5px;font-weight:500;margin-bottom:7px;"><i class="ti ti-bell"></i>เตือนความจำ</div>
+          <div style="font-size:13.5px;font-weight:500;">Sprint planning</div><div class="meta" style="margin-top:3px;">เริ่มในอีก 15 นาที · วันนี้ 10:00</div></div>
+        <div style="display:flex;border-top:.5px solid #eef0f2;">
+          <div style="flex:1;text-align:center;padding:9px;color:#16a34a;font-size:12.5px;border-right:.5px solid #eef0f2;"><i class="ti ti-video" style="font-size:14px;vertical-align:-2px;margin-right:4px;"></i>เข้าร่วม Meet</div>
+          <div style="flex:1;text-align:center;padding:9px;color:#6b7280;font-size:12.5px;">เลื่อน 5 นาที</div></div>
+      </div></div>
+    </div>
+  </div><div class="caption"><b>C7 · แจ้งเตือน (push)</b> — เตือนก่อนประชุม + เข้าร่วมทันที</div></div>
+
+  <!-- C8 rich menu -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">โปรเจกต์ HR</div></div><i class="ti ti-menu-2"></i></div>
+    <div class="chat-area" style="min-height:60px;">
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="b-bot">เลือกเมนูด้านล่าง หรือพิมพ์มาได้เลยครับ</div></div>
+    </div>
+    <div class="rmenu">
+      <div><i class="ti ti-folder" style="font-size:22px;color:#0f6e56;"></i><div class="lbl">เลือกโปรเจกต์</div></div>
+      <div><i class="ti ti-notes" style="font-size:22px;color:#185fa5;"></i><div class="lbl">สรุปประชุม</div></div>
+      <div style="border-right:none;"><i class="ti ti-clipboard-plus" style="font-size:22px;color:#534ab7;"></i><div class="lbl">เพิ่มงาน</div></div>
+      <div style="border-bottom:none;"><i class="ti ti-list-check" style="font-size:22px;color:#854f0b;"></i><div class="lbl">งานค้าง</div></div>
+      <div style="border-bottom:none;"><i class="ti ti-file-export" style="font-size:22px;color:#993c1d;"></i><div class="lbl">ออกเอกสาร</div></div>
+      <div style="border-right:none;border-bottom:none;"><i class="ti ti-help-circle" style="font-size:22px;color:#5f5e5a;"></i><div class="lbl">ช่วยเหลือ</div></div>
+    </div>
+    <div class="input-bar"><i class="ti ti-keyboard" style="font-size:19px;"></i><div class="field">พิมพ์ข้อความ…</div><i class="ti ti-microphone" style="font-size:18px;"></i></div>
+  </div><div class="caption"><b>C8 · Rich menu</b> — เมนูค้างลดการพิมพ์</div></div>
+
+  <!-- C9 states -->
+  <div class="screen"><div class="phone chat">
+    <div class="line-header"><i class="ti ti-chevron-left"></i><div class="hdr-av"><i class="ti ti-robot"></i></div><div class="grow"><div class="name">ผู้ช่วย PM</div><div class="sub">สถานะตอบกลับ</div></div></div>
+    <div class="chat-area">
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:6px;color:#0f6e56;font-size:12.5px;font-weight:500;margin-bottom:7px;"><i class="ti ti-circle-check"></i>ดำเนินการเรียบร้อย</div>
+        <div style="font-size:11.5px;color:#374151;line-height:1.9;">
+          <div><i class="ti ti-mail" style="font-size:13px;color:#16a34a;vertical-align:-2px;margin-right:4px;"></i>ส่งเมลให้ผู้เข้าร่วม 4 คน</div>
+          <div><i class="ti ti-clipboard-check" style="font-size:13px;color:#16a34a;vertical-align:-2px;margin-right:4px;"></i>เปิด card <span style="color:#185fa5;">HR-128</span></div>
+          <div><i class="ti ti-file-text" style="font-size:13px;color:#16a34a;vertical-align:-2px;margin-right:4px;"></i>เก็บ <span style="color:#185fa5;">Meeting Record</span></div>
+        </div></div></div></div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="card"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:6px;color:#a32d2d;font-size:12.5px;font-weight:500;margin-bottom:7px;"><i class="ti ti-alert-triangle"></i>ทำได้บางส่วน</div>
+        <div style="font-size:11.5px;color:#374151;line-height:1.9;margin-bottom:9px;">
+          <div><i class="ti ti-check" style="font-size:13px;color:#16a34a;vertical-align:-2px;margin-right:4px;"></i>อัปเดต Project Plan แล้ว</div>
+          <div><i class="ti ti-x" style="font-size:13px;color:#dc2626;vertical-align:-2px;margin-right:4px;"></i>เปิด card ClickUp ไม่สำเร็จ</div></div>
+        <span class="q primary" style="font-size:11.5px;"><i class="ti ti-refresh"></i>ลองอีกครั้ง</span></div></div></div>
+      <div class="row-bot"><div class="av"><i class="ti ti-robot"></i></div><div class="grow">
+        <div class="b-bot" style="margin-bottom:7px;">งาน "ทำ API login" ยังไม่ได้ระบุกำหนดส่ง เลือกได้เลยครับ</div>
+        <div class="quicks" style="padding:0;"><span class="q">ศุกร์นี้</span><span class="q">สัปดาห์หน้า</span><span class="q">ระบุวันเอง</span></div></div></div>
+    </div>
+  </div><div class="caption"><b>C9 · สถานะตอบกลับ</b> — สำเร็จ / บางส่วน / ถามกลับ</div></div>
+
+</div>
+
+<h2 class="group">ฝั่งเว็บตั้งค่า (LIFF)</h2>
+<div class="gallery">
+
+  <!-- W1 switcher -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">โปรเจกต์</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body"><div class="list">
+      <div class="list-row"><span class="s-accent mono">HR</span><div class="grow"><div>HR system</div><div class="sub2">โปรเจกต์ปัจจุบัน</div></div><i class="ti ti-circle-check-filled" style="color:#15803d;font-size:19px;"></i></div>
+      <div class="list-row"><span class="s-muted mono" style="background:var(--surface-1);border-radius:8px;">MOB</span><div class="grow"><div>Mobile App</div><div class="sub2">งานค้าง 8 · ประชุม 1</div></div></div>
+      <div class="list-row"><span class="s-muted mono" style="background:var(--surface-1);border-radius:8px;">WEB</span><div class="grow"><div>Website Revamp</div><div class="sub2">งานค้าง 3</div></div></div>
+      <div class="link-row"><i class="ti ti-plus"></i>สร้างโปรเจกต์ใหม่</div>
+    </div></div>
+  </div><div class="caption"><b>W1 · สลับโปรเจกต์</b></div></div>
+
+  <!-- W2 dashboard -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">HR system</div><div class="sub">แดชบอร์ด</div></div><i class="ti ti-switch-horizontal muted"></i></div>
+    <div class="admin-body">
+      <div class="stats">
+        <div class="stat"><div class="num">16</div><div class="lbl">งานทั้งหมด</div></div>
+        <div class="stat"><div class="num" style="color:#b45309;">3</div><div class="lbl">ค้าง</div></div>
+        <div class="stat"><div class="num" style="color:#15803d;">11</div><div class="lbl">เสร็จ</div></div>
+      </div>
+      <div class="sec-label">Milestone</div>
+      <div class="box"><div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="font-size:12.5px;">ปิดเฟส 1</span><span class="sub2">31 ก.ค.</span></div><div class="bar"><span style="width:60%;"></span></div><div class="sub2" style="margin-top:5px;">3 จาก 5 งานเสร็จ</div></div>
+      <div class="sec-label">งานใกล้ครบกำหนด</div>
+      <div class="list">
+        <div class="list-row"><span class="grow">ทำ wireframe login</span><span class="sub2" style="color:#dc2626;">เลย 2 วัน</span></div>
+        <div class="list-row"><span class="grow">เตรียม API spec</span><span class="sub2" style="color:#b45309;">พรุ่งนี้</span></div>
+      </div>
+      <div class="sec-label">ประชุมถัดไป</div>
+      <div class="box" style="display:flex;align-items:center;gap:9px;margin-bottom:0;"><i class="ti ti-calendar-event" style="color:#2563eb;font-size:18px;"></i><div><div style="font-size:12.5px;">Sprint review</div><div class="sub2">ศุกร์ 14:00 · Google Meet</div></div></div>
+    </div>
+  </div><div class="caption"><b>W2 · แดชบอร์ด</b> — ภาพรวมโปรเจกต์</div></div>
+
+  <!-- W3 members -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">สมาชิกโปรเจกต์</div><div class="sub">HR system · 3 คน</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body"><div class="list">
+      <div class="list-row"><div style="width:32px;height:32px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);display:flex;align-items:center;justify-content:center;font-weight:600;">ส</div><div class="grow"><div>สมชาย</div><div class="sub2">somchai@yourco.com</div></div><span class="sub2">Dev</span><i class="ti ti-chevron-right muted"></i></div>
+      <div class="list-row"><div style="width:32px;height:32px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);display:flex;align-items:center;justify-content:center;font-weight:600;">อ</div><div class="grow"><div>อร</div><div class="sub2">orn@yourco.com</div></div><span class="sub2">Designer</span><i class="ti ti-chevron-right muted"></i></div>
+      <div class="list-row"><div style="width:32px;height:32px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);display:flex;align-items:center;justify-content:center;font-weight:600;">ป</div><div class="grow"><div>ปิติ</div><div class="sub2">piti@yourco.com</div></div><span class="sub2">DevOps</span><i class="ti ti-chevron-right muted"></i></div>
+      <div class="link-row"><i class="ti ti-user-plus"></i>เพิ่มสมาชิก</div>
+    </div></div>
+  </div><div class="caption"><b>W3 · สมาชิก</b> — เก็บอีเมลไว้เชิญประชุม/มอบงาน</div></div>
+
+  <!-- W4 connect -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><i class="ti ti-chevron-left muted"></i><div class="grow"><div class="name">เชื่อมต่อแพลตฟอร์ม</div></div></div>
+    <div class="admin-body"><div class="list">
+      <div class="list-row"><i class="ti ti-layout-kanban muted"></i><span class="grow">ClickUp</span><span class="s-accent">เชื่อมต่อ</span></div>
+      <div class="list-row"><i class="ti ti-brand-trello muted"></i><span class="grow">Jira</span><span class="sub2" style="color:#15803d;">เชื่อมแล้ว</span></div>
+      <div class="list-row"><i class="ti ti-brand-google muted"></i><span class="grow">Google</span><span class="sub2" style="color:#15803d;">เชื่อมแล้ว</span></div>
+      <div class="list-row"><i class="ti ti-template muted"></i><span class="grow">Asana</span><span class="s-accent">เชื่อมต่อ</span></div>
+      <div class="list-row"><i class="ti ti-notebook muted"></i><span class="grow">Notion</span><span class="s-accent">เชื่อมต่อ</span></div>
+    </div>
+    <div class="sub2" style="line-height:1.6;"><i class="ti ti-lock" style="font-size:13px;vertical-align:-2px;"></i> กดเชื่อมต่อจะพาไปหน้าอนุญาตสิทธิ์ (OAuth) เชื่อมครั้งเดียวใช้ได้ทุกโปรเจกต์</div>
+    </div>
+  </div><div class="caption"><b>W4 · เชื่อมต่อแพลตฟอร์ม</b> — เพิ่ม connection</div></div>
+
+  <!-- W5 templates + routing -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">การเชื่อมต่อ</div><div class="sub">โปรเจกต์ HR system</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body">
+      <div class="sec-label">ปลายทางของโปรเจกต์นี้</div>
+      <div class="list">
+        <div class="list-row"><i class="ti ti-clipboard-check muted"></i><span class="grow">งาน</span><span class="sub2">ClickUp</span><i class="ti ti-chevron-down muted"></i></div>
+        <div class="list-row"><i class="ti ti-calendar muted"></i><span class="grow">ปฏิทิน</span><span class="sub2">Google Calendar</span><i class="ti ti-chevron-down muted"></i></div>
+        <div class="list-row"><i class="ti ti-file-text muted"></i><span class="grow">เอกสาร</span><span class="sub2">Google Drive</span><i class="ti ti-chevron-down muted"></i></div>
+        <div class="list-row"><i class="ti ti-mail muted"></i><span class="grow">อีเมล</span><span class="sub2">Gmail</span><i class="ti ti-chevron-down muted"></i></div>
+      </div>
+      <div class="sec-label">เทมเพลตเอกสาร</div>
+      <div class="list">
+        <div class="list-row"><i class="ti ti-file-text muted"></i><span class="grow">บันทึกการประชุม</span><span class="s-success">มีแล้ว</span><i class="ti ti-refresh muted"></i></div>
+        <div class="list-row"><i class="ti ti-mail muted"></i><span class="grow">Memo</span><span class="s-success">มีแล้ว</span><i class="ti ti-refresh muted"></i></div>
+        <div class="list-row"><i class="ti ti-git-branch muted"></i><span class="grow">Traceability</span><span class="s-muted">ยังไม่มี</span><i class="ti ti-upload accent"></i></div>
+      </div>
+    </div>
+  </div><div class="caption"><b>W5 · ปลายทาง + เทมเพลต</b> — route capability + อัปโหลด .docx</div></div>
+
+  <!-- W6 numbering -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">เลขเอกสาร</div><div class="sub">โปรเจกต์ HR system</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body">
+      <div class="sec-label">รูปแบบเลขเอกสาร</div>
+      <div class="box"><div class="mono sub2">{KEY}-{TYPE}-{เลขรัน 4 หลัก}</div><div class="mono" style="font-size:17px;font-weight:500;margin-top:5px;">HR-MIN-0007</div></div>
+      <div class="list-row" style="border:.5px solid var(--border);border-radius:11px;margin-bottom:15px;"><span class="grow">รีเซ็ตเลขรันทุกปี</span><span class="toggle on"></span></div>
+      <div class="sec-label">ต่อชนิดเอกสาร</div>
+      <div class="list">
+        <div class="list-row"><span class="grow">บันทึกการประชุม</span><span class="s-accent mono">MIN</span><span class="sub2">ล่าสุด 0007</span></div>
+        <div class="list-row"><span class="grow">Memo</span><span class="s-accent mono">MEMO</span><span class="sub2">ล่าสุด 0012</span></div>
+        <div class="list-row"><span class="grow">Project Plan</span><span class="s-accent mono">PLAN</span><span class="sub2">ล่าสุด 0002</span></div>
+        <div class="list-row"><span class="grow">Change Request</span><span class="s-accent mono">CR</span><span class="sub2">ล่าสุด 0001</span></div>
+      </div>
+    </div>
+  </div><div class="caption"><b>W6 · เลขเอกสาร</b> — รูปแบบ + ตัวนับต่อชนิด</div></div>
+
+  <!-- W7 notifications -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">การแจ้งเตือน</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body">
+      <div class="sec-label">ชนิดการแจ้งเตือน</div>
+      <div class="list">
+        <div class="list-row"><span class="grow">งานใกล้ครบกำหนด</span><span class="toggle on"></span></div>
+        <div class="list-row"><span class="grow">งานเลยกำหนด</span><span class="toggle on"></span></div>
+        <div class="list-row"><span class="grow">ใกล้ถึงเวลาประชุม</span><span class="toggle on"></span></div>
+        <div class="list-row"><span class="grow muted">สถานะงานเปลี่ยน</span><span class="toggle off"></span></div>
+        <div class="list-row"><span class="grow">milestone ใกล้ถึง</span><span class="toggle on"></span></div>
+      </div>
+      <div class="sec-label">ช่วงเวลางดรบกวน</div>
+      <div class="list-row" style="border:.5px solid var(--border);border-radius:11px;"><i class="ti ti-moon muted"></i><span class="grow">ไม่ส่งช่วง</span><span class="sub2 mono">22:00 – 07:00</span></div>
+    </div>
+  </div><div class="caption"><b>W7 · การแจ้งเตือน</b> — ชนิด + ช่วงงดรบกวน</div></div>
+
+  <!-- W8 repository -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">เอกสาร</div><div class="sub">HR system</div></div><i class="ti ti-search muted"></i></div>
+    <div class="admin-body">
+      <div class="tabs"><span class="tab on">ทั้งหมด</span><span class="tab off">บันทึกประชุม</span><span class="tab off">Memo</span></div>
+      <div class="list">
+        <div class="list-row"><i class="ti ti-file-text muted"></i><div class="grow"><div>บันทึกการประชุม kickoff</div><div class="sub2 mono">HR-MIN-0007 · 29 มิ.ย.</div></div><i class="ti ti-download muted"></i></div>
+        <div class="list-row"><i class="ti ti-mail muted"></i><div class="grow"><div>แจ้งเปลี่ยน scope เฟส 1</div><div class="sub2 mono">HR-MEMO-0012 · 25 มิ.ย.</div></div><i class="ti ti-download muted"></i></div>
+        <div class="list-row"><i class="ti ti-layout-list muted"></i><div class="grow"><div>Project Plan v2</div><div class="sub2 mono">HR-PLAN-0002 · 20 มิ.ย.</div></div><i class="ti ti-download muted"></i></div>
+      </div>
+    </div>
+  </div><div class="caption"><b>W8 · คลังเอกสาร</b> — เอกสารที่ออกพร้อมเลขรัน</div></div>
+
+  <!-- W9 traceability -->
+  <div class="screen"><div class="phone">
+    <div class="liff-header"><div class="grow"><div class="name">Traceability</div><div class="sub">HR system · ครอบคลุม 1/3</div></div><i class="ti ti-x muted"></i></div>
+    <div class="admin-body">
+      <div class="trow"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;"><span class="s-accent mono">REQ-012</span><span class="grow" style="font-size:12.5px;">ระบบ login</span><span class="s-success">ครอบคลุม</span></div><div class="sub2"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-2px;"></i> งาน HR-128 · <i class="ti ti-checklist" style="font-size:12px;vertical-align:-2px;"></i> test TC-031</div></div>
+      <div class="trow"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;"><span class="s-accent mono">REQ-013</span><span class="grow" style="font-size:12.5px;">reset password</span><span class="s-warn">ขาด test</span></div><div class="sub2"><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-2px;"></i> งาน HR-130 · <span style="color:#b45309;">ยังไม่มี test case</span></div></div>
+      <div class="trow"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;"><span class="s-accent mono">REQ-014</span><span class="grow" style="font-size:12.5px;">2FA</span><span class="s-danger">ยังไม่มีงาน</span></div><div class="sub2" style="color:#dc2626;">ยังไม่มี task และ test case</div></div>
+    </div>
+  </div><div class="caption"><b>W9 · Traceability</b> — โชว์ช่องโหว่ความครอบคลุม (ISO)</div></div>
+
+</div>
+</body>
+</html>

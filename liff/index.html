@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PM Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div id="loading" class="loading">กำลังโหลด...</div>
+    <div id="page" class="page hidden"></div>
+    <nav id="nav" class="nav-bottom hidden">
+      <a href="#/dashboard" data-nav="dashboard">แดชบอร์ด</a>
+      <a href="#/projects" data-nav="projects">โปรเจกต์</a>
+      <a href="#/members" data-nav="members">สมาชิก</a>
+      <a href="#/settings" data-nav="settings">ตั้งค่า</a>
+    </nav>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
