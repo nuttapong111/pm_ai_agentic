@@ -88,8 +88,81 @@ async function init() {
   }
 }
 
-function header(title, sub = '') {
-  return `<div class="liff-header"><div class="grow"><div class="name">${title}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div></div>`;
+const WP_LABELS = {
+  meeting_record: 'บันทึกการประชุม',
+  memo: 'Memo',
+  project_plan: 'Project Plan',
+  requirements: 'Requirements',
+  traceability: 'Traceability',
+  test_case: 'Test Case',
+  change_request: 'Change Request',
+};
+
+const CAP_LABELS = {
+  tasks: 'งาน',
+  calendar: 'ปฏิทิน',
+  docs: 'เอกสาร',
+  email: 'อีเมล',
+};
+
+const CAP_ICONS = {
+  tasks: 'ti-clipboard-check',
+  calendar: 'ti-calendar',
+  docs: 'ti-file-text',
+  email: 'ti-mail',
+};
+
+const PLATFORMS = [
+  { type: 'clickup', label: 'ClickUp', icon: 'ti-layout-kanban' },
+  { type: 'jira', label: 'Jira', icon: 'ti-brand-trello' },
+  { type: 'google', label: 'Google', icon: 'ti-brand-google' },
+];
+
+const DOC_ICONS = {
+  meeting_record: 'ti-file-text',
+  memo: 'ti-mail',
+  project_plan: 'ti-layout-list',
+  default: 'ti-file',
+};
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+}
+
+function header(title, sub = '', opts = {}) {
+  const back = opts.back
+    ? `<a href="${opts.back}" class="header-btn muted"><i class="ti ti-chevron-left"></i></a>`
+    : '';
+  let right = '';
+  if (opts.close) {
+    right = `<button type="button" class="header-btn muted" data-action="close-liff"><i class="ti ti-x"></i></button>`;
+  } else if (opts.switch) {
+    right = `<a href="#/projects" class="header-btn muted"><i class="ti ti-switch-horizontal"></i></a>`;
+  } else if (opts.search) {
+    right = `<span class="header-btn muted"><i class="ti ti-search"></i></span>`;
+  }
+  return `<div class="liff-header">${back}<div class="grow"><div class="name">${esc(title)}</div>${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div>${right}</div>`;
+}
+
+function formatDueLabel(dueDate) {
+  if (!dueDate) return '-';
+  const due = new Date(dueDate);
+  const now = new Date();
+  const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return `เลย ${Math.abs(diff)} วัน`;
+  if (diff === 0) return 'วันนี้';
+  if (diff === 1) return 'พรุ่งนี้';
+  return due.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+}
+
+function dueColor(dueDate) {
+  if (!dueDate) return 'var(--text-secondary)';
+  const due = new Date(dueDate);
+  const now = new Date();
+  const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return 'var(--text-danger)';
+  if (diff <= 1) return 'var(--text-warning)';
+  return 'var(--text-secondary)';
 }
 
 function setNavActive(route) {
@@ -101,7 +174,12 @@ function setNavActive(route) {
 async function render() {
   const route = (location.hash || '#/dashboard').slice(2).split('/')[0];
   const page = document.getElementById('page');
-  setNavActive(route === 'projects' ? 'projects' : route === 'members' ? 'members' : route === 'settings' || route === 'connections' || route === 'numbering' || route === 'notifications' ? 'settings' : 'dashboard');
+  setNavActive(
+    route === 'projects' ? 'projects'
+    : route === 'members' ? 'members'
+    : ['settings', 'connections', 'bindings', 'numbering', 'notifications'].includes(route) ? 'settings'
+    : 'dashboard'
+  );
 
   try {
     switch (route) {
@@ -194,6 +272,17 @@ function bindEvents() {
         };
         input.click();
       }
+      if (action === 'close-liff') {
+        if (typeof liff !== 'undefined' && liff.closeWindow) liff.closeWindow();
+        else history.back();
+      }
+      if (action === 'doc-tab') {
+        document.querySelectorAll('[data-doc-tab]').forEach(t => t.classList.toggle('on', t.dataset.docTab === el.dataset.tab));
+        document.querySelectorAll('[data-doc-item]').forEach(row => {
+          const show = el.dataset.tab === 'all' || row.dataset.docType === el.dataset.tab;
+          row.classList.toggle('hidden', !show);
+        });
+      }
     };
   });
 
@@ -214,123 +303,169 @@ async function viewProjects() {
   projects = await api('/projects');
   const rows = projects.map(p => {
     const active = activeProject?.projectId === p.id;
-    return `<div class="list-row" data-action="select-project" data-id="${p.id}">
-      <span class="${active ? 's-accent' : 's-muted'} mono">${p.key}</span>
-      <div class="grow"><div>${p.name}</div>${active ? '<div class="sub2">โปรเจกต์ปัจจุบัน</div>' : ''}</div>
-      ${active ? '<span class="s-success">✓</span>' : ''}
+    return `<div class="list-row clickable" data-action="select-project" data-id="${p.id}">
+      <span class="key-badge ${active ? 'active' : 'inactive'}">${esc(p.key)}</span>
+      <div class="grow"><div>${esc(p.name)}</div>${active ? '<div class="sub2">โปรเจกต์ปัจจุบัน</div>' : ''}</div>
+      ${active ? '<i class="ti ti-circle-check-filled icon-success" style="font-size:19px"></i>' : ''}
     </div>`;
   }).join('');
-  return header('โปรเจกต์') + `<div class="admin-body"><div class="list">${rows}
-    <button class="link-row" data-action="create-project">+ สร้างโปรเจกต์ใหม่</button></div></div>`;
+  return header('โปรเจกต์', '', { close: true }) + `<div class="admin-body"><div class="list">${rows || '<div class="list-row"><span class="sub2">ยังไม่มีโปรเจกต์</span></div>'}
+    <button type="button" class="link-row" data-action="create-project"><i class="ti ti-plus"></i>สร้างโปรเจกต์ใหม่</button></div></div>`;
 }
 
 async function viewDashboard() {
   if (!activeProject?.projectId) {
-    return header('แดชบอร์ด') + '<div class="admin-body"><p>ยังไม่ได้เลือกโปรเจกต์ <a href="#/projects">เลือกโปรเจกต์</a></p></div>';
+    return header('แดชบอร์ด', '', { switch: true }) + `<div class="empty-state">ยังไม่ได้เลือกโปรเจกต์<br><a href="#/projects">เลือกโปรเจกต์</a></div>`;
   }
   const d = await api(`/projects/${activeProject.projectId}/dashboard`);
-  const pid = activeProject.projectId;
-  const dueRows = (d.dueSoon || []).map(t => {
-    const overdue = t.dueDate && new Date(t.dueDate) < new Date();
-    return `<div class="list-row"><span class="grow">${t.title}</span><span class="sub2" style="color:${overdue ? '#dc2626' : '#b45309'}">${t.dueDate || '-'}</span></div>`;
-  }).join('');
+  const dueRows = (d.dueSoon || []).map(t => `<div class="list-row">
+    <span class="grow">${esc(t.title)}</span>
+    <span class="sub2" style="color:${dueColor(t.dueDate)}">${formatDueLabel(t.dueDate)}</span>
+  </div>`).join('');
   const ms = d.nextMilestone;
-  const msBar = ms ? `<div class="box"><div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span>${ms.name}</span><span class="sub2">${ms.targetDate || ''}</span></div>
-    <div class="bar"><span style="width:${ms.linkedTaskCount ? Math.min(100, ms.linkedTaskCount * 20) : 0}%"></span></div></div>` : '<p class="sub2">ยังไม่มี milestone</p>';
+  const linked = ms?.linkedTaskCount ?? 0;
+  const pct = linked ? 40 : 0;
+  const msBar = ms
+    ? `<div class="box"><div style="display:flex;justify-content:space-between;margin-bottom:7px"><span style="font-size:12.5px">${esc(ms.name)}</span><span class="sub2">${ms.targetDate ? new Date(ms.targetDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : ''}</span></div>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="sub2" style="margin-top:5px">${linked} งานที่ผูกกับ milestone</div></div>`
+    : '<div class="box"><span class="sub2">ยังไม่มี milestone</span></div>';
   const evt = d.nextEvent;
-  const evtBox = evt ? `<div class="box" style="display:flex;gap:9px;"><span>📅</span><div><div>${evt.title}</div><div class="sub2">${new Date(evt.startsAt).toLocaleString('th-TH')}</div></div></div>` : '';
-  return header(activeProject.name || 'แดชบอร์ด', 'แดชบอร์ด') + `<div class="admin-body">
+  const evtBox = evt
+    ? `<div class="box meeting"><i class="ti ti-calendar-event"></i><div><div style="font-size:12.5px">${esc(evt.title)}</div><div class="sub2">${new Date(evt.startsAt).toLocaleString('th-TH', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}${evt.meetLink ? ' · Google Meet' : ''}</div></div></div>`
+    : '<div class="box"><span class="sub2">ไม่มีนัดหมายถัดไป</span></div>';
+  return header(activeProject.name || 'แดชบอร์ด', 'แดชบอร์ด', { switch: true }) + `<div class="admin-body">
     <div class="stats">
       <div class="stat"><div class="num">${d.taskCounts?.total || 0}</div><div class="lbl">งานทั้งหมด</div></div>
-      <div class="stat"><div class="num" style="color:#b45309">${d.taskCounts?.pending || 0}</div><div class="lbl">ค้าง</div></div>
-      <div class="stat"><div class="num" style="color:#15803d">${d.taskCounts?.done || 0}</div><div class="lbl">เสร็จ</div></div>
+      <div class="stat"><div class="num" style="color:var(--text-warning)">${d.taskCounts?.pending || 0}</div><div class="lbl">ค้าง</div></div>
+      <div class="stat"><div class="num" style="color:var(--text-success)">${d.taskCounts?.done || 0}</div><div class="lbl">เสร็จ</div></div>
     </div>
     <div class="sec-label">Milestone</div>${msBar}
-    <div class="sec-label">งานใกล้ครบกำหนด</div><div class="list">${dueRows || '<div class="list-row"><span class="sub2">ไม่มีงานใกล้ครบ</span></div>'}</div>
-    <div class="sec-label">ประชุมถัดไป</div>${evtBox || '<p class="sub2">ไม่มีนัดหมาย</p>'}
+    <div class="sec-label">งานใกล้ครบกำหนด</div>
+    <div class="list">${dueRows || '<div class="list-row"><span class="sub2">ไม่มีงานใกล้ครบ</span></div>'}</div>
+    <div class="sec-label">ประชุมถัดไป</div>${evtBox}
   </div>`;
 }
 
 async function viewMembers() {
-  if (!activeProject?.projectId) return header('สมาชิก') + '<div class="admin-body"><p>เลือกโปรเจกต์ก่อน</p></div>';
+  if (!activeProject?.projectId) {
+    return header('สมาชิกโปรเจกต์', '', { close: true }) + `<div class="empty-state"><a href="#/projects">เลือกโปรเจกต์ก่อน</a></div>`;
+  }
   const members = await api(`/projects/${activeProject.projectId}/members`);
-  const rows = members.map(m => `<div class="list-row">
-    <div class="grow"><div>${m.name}</div><div class="sub2">${m.email || '-'}</div></div>
-    <span class="sub2">${m.role || ''}</span>
-    <button class="s-danger" data-action="delete-member" data-id="${m.id}" style="border:none;background:none;cursor:pointer">ลบ</button>
-  </div>`).join('');
-  return header('สมาชิกโปรเจกต์', activeProject.name) + `<div class="admin-body"><div class="list">${rows}
-    <button class="link-row" data-action="add-member">+ เพิ่มสมาชิก</button></div></div>`;
+  const rows = members.map(m => {
+    const initial = (m.name || '?').charAt(0);
+    return `<div class="list-row">
+      <div class="avatar">${esc(initial)}</div>
+      <div class="grow"><div>${esc(m.name)}</div><div class="sub2">${esc(m.email || '-')}</div></div>
+      <span class="sub2">${esc(m.role || '')}</span>
+      <button type="button" class="header-btn muted" data-action="delete-member" data-id="${m.id}" title="ลบ"><i class="ti ti-trash" style="font-size:15px;color:var(--text-danger)"></i></button>
+    </div>`;
+  }).join('');
+  return header('สมาชิกโปรเจกต์', `${activeProject.name} · ${members.length} คน`, { close: true }) + `<div class="admin-body"><div class="list">${rows || '<div class="list-row"><span class="sub2">ยังไม่มีสมาชิก</span></div>'}
+    <button type="button" class="link-row" data-action="add-member"><i class="ti ti-user-plus"></i>เพิ่มสมาชิก</button></div></div>`;
 }
 
 async function viewConnections() {
   const conns = await api('/connections');
-  const types = ['clickup', 'jira', 'google', 'gmail'];
-  const available = types.map(t => `<div class="list-row" data-action="authorize" data-type="${t}">
-    <span class="grow">${t}</span><span class="s-accent">เชื่อมต่อ</span></div>`).join('');
-  const connected = conns.map(c => `<div class="list-row">
-    <span class="grow">${c.displayName}</span><span class="s-success">${c.status}</span>
-    <button data-action="delete-connection" data-id="${c.id}" style="border:none;background:none;cursor:pointer;color:#dc2626">ลบ</button>
-  </div>`).join('');
-  return header('เชื่อมต่อแพลตฟอร์ม') + `<div class="admin-body">
-    <div class="sec-label">เชื่อมแล้ว</div><div class="list">${connected || '<div class="list-row"><span class="sub2">ยังไม่มี</span></div>'}</div>
-    <div class="sec-label">เพิ่มการเชื่อมต่อ</div><div class="list">${available}</div>
-    <p class="sub2">เชื่อมครั้งเดียวใช้ได้ทุกโปรเจกต์ (OAuth)</p>
+  const byType = Object.fromEntries(conns.map(c => [c.type, c]));
+  const rows = PLATFORMS.map(p => {
+    const c = byType[p.type];
+    const status = c
+      ? '<span class="sub2" style="color:var(--text-success)">เชื่อมแล้ว</span>'
+      : '<span class="s-accent">เชื่อมต่อ</span>';
+    const action = c ? '' : `data-action="authorize" data-type="${p.type}"`;
+    return `<div class="list-row clickable" ${action}><i class="ti ${p.icon} icon-muted"></i><span class="grow">${p.label}</span>${status}</div>`;
+  }).join('');
+  return header('เชื่อมต่อแพลตฟอร์ม', '', { back: '#/settings' }) + `<div class="admin-body">
+    <div class="list">${rows}</div>
+    <p class="note"><i class="ti ti-lock" style="font-size:13px;vertical-align:-2px"></i> กดเชื่อมต่อจะพาไปหน้าอนุญาตสิทธิ์ (OAuth) เชื่อมครั้งเดียวใช้ได้ทุกโปรเจกต์</p>
   </div>`;
 }
 
 async function viewBindings() {
-  if (!activeProject?.projectId) return header('การเชื่อมต่อ') + '<div class="admin-body"><p>เลือกโปรเจกต์ก่อน</p></div>';
+  if (!activeProject?.projectId) {
+    return header('การเชื่อมต่อ', '', { close: true }) + `<div class="empty-state"><a href="#/projects">เลือกโปรเจกต์ก่อน</a></div>`;
+  }
   const bindings = await api(`/projects/${activeProject.projectId}/bindings`);
   const caps = ['tasks', 'calendar', 'docs', 'email'];
-  const rows = caps.map(cap => {
+  const capRows = caps.map(cap => {
     const b = bindings.find(x => x.capability === cap);
-    return `<div class="list-row"><span class="grow">${cap}</span><span class="sub2">${b ? b.connectionId.slice(0,8) + '…' : 'ยังไม่ตั้ง'}</span></div>`;
+    const dest = b ? `${String(b.connectionId).slice(0, 8)}…` : 'ยังไม่ตั้ง';
+    return `<div class="list-row"><i class="ti ${CAP_ICONS[cap]} icon-muted"></i><span class="grow">${CAP_LABELS[cap]}</span><span class="sub2">${esc(dest)}</span><i class="ti ti-chevron-down icon-muted"></i></div>`;
   }).join('');
   const templates = await api(`/projects/${activeProject.projectId}/templates`);
   const wpTypes = ['meeting_record', 'memo', 'traceability'];
   const tplRows = wpTypes.map(wp => {
     const has = templates.some(t => t.wpType === wp);
-    return `<div class="list-row"><span class="grow">${wp}</span><span class="${has ? 's-success' : 's-muted'}">${has ? 'มีแล้ว' : 'ยังไม่มี'}</span>
-      <button data-action="upload-template" data-wp="${wp}" style="border:none;background:none;cursor:pointer;color:#2563eb">อัปโหลด</button></div>`;
+    const right = has
+      ? '<span class="s-success">มีแล้ว</span><i class="ti ti-refresh icon-muted"></i>'
+      : '<span class="s-muted">ยังไม่มี</span><button type="button" class="header-btn accent" data-action="upload-template" data-wp="' + wp + '"><i class="ti ti-upload"></i></button>';
+    return `<div class="list-row"><i class="ti ${wp === 'memo' ? 'ti-mail' : wp === 'traceability' ? 'ti-git-branch' : 'ti-file-text'} icon-muted"></i><span class="grow">${WP_LABELS[wp] || wp}</span>${right}</div>`;
   }).join('');
-  return header('การเชื่อมต่อ', activeProject.name) + `<div class="admin-body">
-    <div class="sec-label">ปลายทาง capability</div><div class="list">${rows}</div>
-    <div class="sec-label">เทมเพลตเอกสาร (.docx)</div><div class="list">${tplRows}</div>
+  return header('การเชื่อมต่อ', `โปรเจกต์ ${activeProject.name}`, { close: true }) + `<div class="admin-body">
+    <div class="sec-label">ปลายทางของโปรเจกต์นี้</div><div class="list">${capRows}</div>
+    <div class="sec-label">เทมเพลตเอกสาร</div><div class="list">${tplRows}</div>
   </div>`;
 }
 
 async function viewNumbering() {
-  if (!activeProject?.projectId) return header('เลขเอกสาร') + '<div class="admin-body"><p>เลือกโปรเจกต์ก่อน</p></div>';
+  if (!activeProject?.projectId) {
+    return header('เลขเอกสาร', '', { close: true }) + `<div class="empty-state"><a href="#/projects">เลือกโปรเจกต์ก่อน</a></div>`;
+  }
   const rules = await api(`/projects/${activeProject.projectId}/numbering`);
-  const rows = rules.map(r => `<div class="list-row"><span class="grow">${r.wpType}</span><span class="s-accent mono">${r.prefix}</span><span class="sub2">ล่าสุด ${String(r.currentSeq).padStart(4,'0')}</span></div>`).join('');
-  return header('เลขเอกสาร', activeProject.name) + `<div class="admin-body">
-    <div class="box"><div class="mono sub2">{KEY}-{TYPE}-{SEQ:04d}</div><div class="mono" style="font-size:17px;font-weight:500;margin-top:5px">${activeProject.key}-MIN-0007</div></div>
-    <div class="sec-label">ต่อชนิดเอกสาร</div><div class="list">${rows}</div>
+  const yearly = rules.some(r => r.resetPeriod === 'yearly');
+  const sample = rules[0];
+  const sampleNum = sample ? `${activeProject.key}-${sample.prefix}-${String(sample.currentSeq).padStart(4, '0')}` : `${activeProject.key}-MIN-0001`;
+  const rows = rules.map(r => `<div class="list-row"><span class="grow">${WP_LABELS[r.wpType] || r.wpType}</span><span class="s-accent mono">${esc(r.prefix)}</span><span class="sub2">ล่าสุด ${String(r.currentSeq).padStart(4, '0')}</span></div>`).join('');
+  return header('เลขเอกสาร', `โปรเจกต์ ${activeProject.name}`, { close: true }) + `<div class="admin-body">
+    <div class="sec-label">รูปแบบเลขเอกสาร</div>
+    <div class="box"><div class="mono sub2">{KEY}-{TYPE}-{เลขรัน 4 หลัก}</div><div class="mono" style="font-size:17px;font-weight:500;margin-top:5px">${esc(sampleNum)}</div></div>
+    <div class="toggle-row"><span class="grow">รีเซ็ตเลขรันทุกปี</span><span class="toggle ${yearly ? 'on' : 'off'}"></span></div>
+    <div class="sec-label">ต่อชนิดเอกสาร</div><div class="list">${rows || '<div class="list-row"><span class="sub2">ยังไม่ตั้งเลขเอกสาร</span></div>'}</div>
   </div>`;
 }
 
 async function viewDocuments() {
-  if (!activeProject?.projectId) return header('เอกสาร') + '<div class="admin-body"><p>เลือกโปรเจกต์ก่อน</p></div>';
+  if (!activeProject?.projectId) {
+    return header('เอกสาร', '', { search: true }) + `<div class="empty-state"><a href="#/projects">เลือกโปรเจกต์ก่อน</a></div>`;
+  }
   const data = await api(`/projects/${activeProject.projectId}/documents`);
-  const rows = (data.items || []).map(d => `<div class="list-row">
-    <div class="grow"><div>${d.title}</div><div class="sub2 mono">${d.docNumber || 'DRAFT'} · ${new Date(d.createdAt).toLocaleDateString('th-TH')}</div></div>
-    <button data-action="download-doc" data-id="${d.id}" style="border:none;background:none;cursor:pointer">⬇</button>
-  </div>`).join('');
-  return header('เอกสาร', activeProject.name) + `<div class="admin-body"><div class="list">${rows || '<div class="list-row"><span class="sub2">ยังไม่มีเอกสาร</span></div>'}</div></div>`;
+  const items = data.items || [];
+  const rows = items.map(d => {
+    const icon = DOC_ICONS[d.wpType] || DOC_ICONS.default;
+    return `<div class="list-row" data-doc-item data-doc-type="${d.wpType || 'other'}">
+      <i class="ti ${icon} icon-muted"></i>
+      <div class="grow"><div>${esc(d.title)}</div><div class="sub2 mono">${esc(d.docNumber || 'DRAFT')} · ${new Date(d.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</div></div>
+      <button type="button" class="header-btn muted" data-action="download-doc" data-id="${d.id}"><i class="ti ti-download"></i></button>
+    </div>`;
+  }).join('');
+  return header('เอกสาร', activeProject.name, { search: true }) + `<div class="admin-body">
+    <div class="tabs">
+      <span class="tab on" data-action="doc-tab" data-tab="all" data-doc-tab="all">ทั้งหมด</span>
+      <span class="tab" data-action="doc-tab" data-tab="meeting_record" data-doc-tab="meeting_record">บันทึกประชุม</span>
+      <span class="tab" data-action="doc-tab" data-tab="memo" data-doc-tab="memo">Memo</span>
+    </div>
+    <div class="list">${rows || '<div class="list-row"><span class="sub2">ยังไม่มีเอกสาร</span></div>'}</div>
+  </div>`;
 }
 
 async function viewTraceability() {
-  if (!activeProject?.projectId) return header('Traceability') + '<div class="admin-body"><p>เลือกโปรเจกต์ก่อน</p></div>';
+  if (!activeProject?.projectId) {
+    return header('Traceability', '', { close: true }) + `<div class="empty-state"><a href="#/projects">เลือกโปรเจกต์ก่อน</a></div>`;
+  }
   const cov = await api(`/projects/${activeProject.projectId}/traceability`);
   const covered = cov.filter(c => c.coverage === 'covered').length;
   const rows = cov.map(c => {
     const badge = c.coverage === 'covered' ? 's-success' : c.coverage === 'missing_test' ? 's-warn' : 's-danger';
     const label = c.coverage === 'covered' ? 'ครอบคลุม' : c.coverage === 'missing_test' ? 'ขาด test' : 'ยังไม่มีงาน';
-    return `<div class="trow"><div style="display:flex;gap:7px;margin-bottom:7px"><span class="s-accent mono">${c.code}</span><span class="grow">${c.title}</span><span class="${badge}">${label}</span></div>
-      <div class="sub2">งาน: ${(c.taskKeys||[]).join(', ') || '-'} · test: ${(c.testCaseCodes||[]).join(', ') || '-'}</div></div>`;
+    const tasks = (c.taskKeys || []).join(', ') || 'ยังไม่มี task';
+    const tests = (c.testCaseCodes || []).join(', ') || 'ยังไม่มี test case';
+    const subStyle = c.coverage === 'no_task' ? ' style="color:var(--text-danger)"' : '';
+    return `<div class="trow"><div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+      <span class="s-accent mono">${esc(c.code)}</span><span class="grow" style="font-size:12.5px">${esc(c.title)}</span><span class="${badge}">${label}</span></div>
+      <div class="sub2"${subStyle}><i class="ti ti-clipboard-check" style="font-size:12px;vertical-align:-2px"></i> ${esc(tasks)} · <i class="ti ti-checklist" style="font-size:12px;vertical-align:-2px"></i> ${esc(tests)}</div></div>`;
   }).join('');
-  return header('Traceability', `${activeProject.name} · ครอบคลุม ${covered}/${cov.length}`) + `<div class="admin-body">${rows || '<p class="sub2">ยังไม่มี requirement</p>'}</div>`;
+  return header('Traceability', `${activeProject.name} · ครอบคลุม ${covered}/${cov.length}`, { close: true }) + `<div class="admin-body">${rows || '<p class="sub2">ยังไม่มี requirement</p>'}</div>`;
 }
 
 async function viewNotifications() {
@@ -339,32 +474,31 @@ async function viewNotifications() {
     ['due_soon', 'งานใกล้ครบกำหนด'],
     ['overdue', 'งานเลยกำหนด'],
     ['meeting_soon', 'ใกล้ถึงเวลาประชุม'],
-    ['status_change', 'สถานะงานเปลี่ยน'],
+    ['status_change', 'สถานะงานเปลี่ยน', true],
     ['milestone_due', 'milestone ใกล้ถึง'],
   ];
   const enabled = new Set(prefs.enabledTypes || []);
-  const rows = types.map(([t, label]) => `<div class="list-row" data-action="toggle-notif" data-type="${t}">
-    <span class="grow">${label}</span><span class="toggle ${enabled.has(t) ? 'on' : 'off'}"></span></div>`).join('');
+  const rows = types.map(([t, label, muted]) => `<div class="list-row clickable" data-action="toggle-notif" data-type="${t}">
+    <span class="grow${muted && !enabled.has(t) ? ' muted' : ''}">${label}</span><span class="toggle ${enabled.has(t) ? 'on' : 'off'}"></span></div>`).join('');
   const quietOn = !!prefs.quietHoursStart;
-  return header('การแจ้งเตือน') + `<div class="admin-body">
+  return header('การแจ้งเตือน', '', { close: true }) + `<div class="admin-body">
     <div class="sec-label">ชนิดการแจ้งเตือน</div><div class="list">${rows}</div>
     <div class="sec-label">ช่วงเวลางดรบกวน</div>
-    <div class="list-row" style="border:1px solid var(--border);border-radius:11px">
-      <span class="grow">ไม่ส่งช่วง ${prefs.quietHoursStart || '22:00'} – ${prefs.quietHoursEnd || '07:00'}</span>
-      <span class="toggle ${quietOn ? 'on' : 'off'}" data-action="quiet-hours"></span>
-    </div>
+    <div class="toggle-row"><i class="ti ti-moon icon-muted"></i><span class="grow">ไม่ส่งช่วง</span><span class="sub2 mono">${prefs.quietHoursStart || '22:00'} – ${prefs.quietHoursEnd || '07:00'}</span><span class="toggle ${quietOn ? 'on' : 'off'}" data-action="quiet-hours"></span></div>
   </div>`;
 }
 
 function viewSettings() {
-  return header('ตั้งค่า') + `<div class="admin-body"><div class="list">
-    <a class="list-row" href="#/connections" style="text-decoration:none;color:inherit"><span class="grow">เชื่อมต่อแพลตฟอร์ม</span>›</a>
-    <a class="list-row" href="#/bindings" style="text-decoration:none;color:inherit"><span class="grow">ปลายทาง + เทมเพลต</span>›</a>
-    <a class="list-row" href="#/numbering" style="text-decoration:none;color:inherit"><span class="grow">เลขเอกสาร</span>›</a>
-    <a class="list-row" href="#/documents" style="text-decoration:none;color:inherit"><span class="grow">คลังเอกสาร</span>›</a>
-    <a class="list-row" href="#/traceability" style="text-decoration:none;color:inherit"><span class="grow">Traceability</span>›</a>
-    <a class="list-row" href="#/notifications" style="text-decoration:none;color:inherit"><span class="grow">การแจ้งเตือน</span>›</a>
-  </div></div>`;
+  const items = [
+    { href: '#/connections', icon: 'ti-plug-connected', label: 'เชื่อมต่อแพลตฟอร์ม' },
+    { href: '#/bindings', icon: 'ti-link', label: 'ปลายทาง + เทมเพลต' },
+    { href: '#/numbering', icon: 'ti-hash', label: 'เลขเอกสาร' },
+    { href: '#/documents', icon: 'ti-files', label: 'คลังเอกสาร' },
+    { href: '#/traceability', icon: 'ti-git-branch', label: 'Traceability' },
+    { href: '#/notifications', icon: 'ti-bell', label: 'การแจ้งเตือน' },
+  ];
+  const rows = items.map(i => `<a class="list-row clickable" href="${i.href}"><i class="ti ${i.icon} icon-muted"></i><span class="grow">${i.label}</span><i class="ti ti-chevron-right icon-muted"></i></a>`).join('');
+  return header('ตั้งค่า', '', { close: true }) + `<div class="admin-body"><div class="list">${rows}</div></div>`;
 }
 
 init();
