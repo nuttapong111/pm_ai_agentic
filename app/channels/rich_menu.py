@@ -213,7 +213,7 @@ def setup_rich_menu(
             "Content-Type": "image/png",
         }
         uploaded = client.post(
-            f"https://api.line.me/v2/bot/richmenu/{rich_menu_id}/content",
+            f"https://api-data.line.me/v2/bot/richmenu/{rich_menu_id}/content",
             headers=upload_headers,
             content=image_bytes,
         )
