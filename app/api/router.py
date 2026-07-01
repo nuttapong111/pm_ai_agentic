@@ -18,12 +18,14 @@ from app.api.routes import (
     templates,
     traceability,
     webhooks,
+    liff,
 )
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(admin.router)
 api_router.include_router(webhooks.router)
 api_router.include_router(auth.router)
+api_router.include_router(liff.router)
 api_router.include_router(projects.router)
 api_router.include_router(members.router)
 api_router.include_router(connections.router)

@@ -5,6 +5,7 @@ import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
@@ -57,6 +58,15 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router)
+
+    @app.get("/liff/config.js")
+    async def liff_config_js() -> Response:
+        liff_id = get_settings().line_liff_id.replace("\\", "\\\\").replace('"', '\\"')
+        return Response(
+            content=f'window.LIFF_ID="{liff_id}";',
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
 
     if STORAGE_DIR.exists():
         app.mount("/storage", StaticFiles(directory=str(STORAGE_DIR)), name="storage")

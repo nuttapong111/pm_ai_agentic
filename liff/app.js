@@ -19,6 +19,15 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
+async function getLiffId() {
+  if (window.LIFF_ID) return window.LIFF_ID;
+  const res = await fetch(API_BASE + '/liff/config');
+  if (!res.ok) throw new Error('ไม่สามารถโหลด LIFF config ได้');
+  const data = await res.json();
+  window.LIFF_ID = data.liffId || '';
+  return window.LIFF_ID;
+}
+
 async function init() {
   const loading = document.getElementById('loading');
   const page = document.getElementById('page');
@@ -37,7 +46,9 @@ async function init() {
       localStorage.setItem('pm_token', token);
     }
   } else if (typeof liff !== 'undefined') {
-    await liff.init({ liffId: window.LIFF_ID || '' });
+    const liffId = await getLiffId();
+    if (!liffId) throw new Error('ไม่พบ LIFF ID — ตั้ง LINE_LIFF_ID บน server');
+    await liff.init({ liffId });
     if (!liff.isLoggedIn()) {
       liff.login();
       return;
