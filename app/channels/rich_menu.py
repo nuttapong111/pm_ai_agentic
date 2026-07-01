@@ -29,9 +29,13 @@ LABELS = [
 ]
 
 _FONT_PATHS = [
+    Path(__file__).resolve().parents[2] / "assets" / "fonts" / "NotoSansThai-Regular.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf",
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
 ]
+
+ICONS = ("folder", "meeting", "task", "pending", "document", "help")
 
 
 def get_active_rich_menu_id() -> str | None:
@@ -139,30 +143,67 @@ def build_rich_menu_definition(liff_id: str, app_base_url: str) -> dict[str, Any
     }
 
 
-def _load_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+def _load_font(size: int = 64) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     for path in _FONT_PATHS:
-        if Path(path).exists():
-            return ImageFont.truetype(path, 72)
+        p = Path(path)
+        if p.exists():
+            return ImageFont.truetype(str(p), size)
+    logger.warning("No Thai font found — rich menu labels may not render")
     return ImageFont.load_default()
+
+
+def _center(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, cx: int, cy: int, fill: str) -> None:
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    draw.text((cx - tw // 2, cy - th // 2), text, fill=fill, font=font)
+
+
+def _draw_icon(draw: ImageDraw.ImageDraw, kind: str, cx: int, cy: int, color: str) -> None:
+    s = 56
+    if kind == "folder":
+        draw.rounded_rectangle([cx - s, cy - s + 10, cx + s, cy + s], radius=12, outline=color, width=8)
+        draw.rounded_rectangle([cx - s + 8, cy - s - 6, cx - s + 50, cy - s + 18], radius=8, fill=color)
+    elif kind == "meeting":
+        draw.ellipse([cx - s, cy - s, cx + s, cy + s], outline=color, width=8)
+        draw.line([cx, cy - s + 16, cx, cy], fill=color, width=8)
+        draw.line([cx, cy, cx + s - 16, cy + 10], fill=color, width=8)
+    elif kind == "task":
+        draw.rounded_rectangle([cx - s + 8, cy - s, cx + s, cy + s], radius=12, outline=color, width=8)
+        draw.line([cx - s + 24, cy + 4, cx - 8, cy + 28], fill=color, width=8)
+        draw.line([cx - 8, cy + 28, cx + s - 12, cy - 20], fill=color, width=8)
+    elif kind == "pending":
+        draw.ellipse([cx - s, cy - s, cx + s, cy + s], outline=color, width=8)
+        draw.arc([cx - s + 12, cy - s + 12, cx + s - 12, cy + s - 12], start=90, end=360, fill=color, width=8)
+        draw.line([cx, cy, cx, cy - 24], fill=color, width=8)
+    elif kind == "document":
+        draw.polygon(
+            [(cx - s + 8, cy - s), (cx + s - 20, cy - s), (cx + s, cy - s + 20), (cx + s, cy + s), (cx - s + 8, cy + s)],
+            outline=color,
+            width=8,
+        )
+        for y in range(cy - 20, cy + 30, 22):
+            draw.line([cx - s + 28, y, cx + s - 20, y], fill=color, width=6)
+    else:
+        draw.ellipse([cx - s, cy - s, cx + s, cy + s], outline=color, width=8)
+        _center(draw, "?", ImageFont.load_default(), cx, cy, color)
 
 
 def generate_rich_menu_image() -> bytes:
     img = Image.new("RGB", (WIDTH, HEIGHT), "#f7f9fb")
     draw = ImageDraw.Draw(img)
-    font = _load_font()
+    label_font = _load_font(56)
 
     for i, (label, color) in enumerate(LABELS):
         col, row = i % 3, i // 3
         x0, y0 = col * COL_W, row * ROW_H
         x1 = x0 + (COL_W if col < 2 else WIDTH - COL_W * 2)
         y1 = y0 + (ROW_H if row == 0 else HEIGHT - ROW_H)
+        cx = (x0 + x1) // 2
+
         draw.rectangle([x0 + 8, y0 + 8, x1 - 8, y1 - 8], fill="white", outline="#e3e6ea", width=4)
-        draw.rectangle([x0 + 8, y0 + 8, x1 - 8, y0 + 28], fill=color)
-        bbox = draw.textbbox((0, 0), label, font=font)
-        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        tx = x0 + (x1 - x0 - tw) // 2
-        ty = y0 + (y1 - y0 - th) // 2 + 10
-        draw.text((tx, ty), label, fill="#1f2937", font=font)
+        draw.rectangle([x0 + 8, y0 + 8, x1 - 8, y0 + 36], fill=color)
+        _draw_icon(draw, ICONS[i], cx, y0 + (y1 - y0) // 2 - 30, color)
+        _center(draw, label, label_font, cx, y0 + (y1 - y0) // 2 + 70, "#1f2937")
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
