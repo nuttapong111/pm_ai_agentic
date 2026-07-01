@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     jira_client_secret: str = ""
     clickup_client_id: str = ""
     clickup_client_secret: str = ""
+    setup_secret: str = ""
 
     @field_validator("database_url", mode="before")
     @classmethod
