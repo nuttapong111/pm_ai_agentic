@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     line_channel_secret: str = ""
     line_channel_access_token: str = ""
     line_liff_id: str = ""
+    line_login_channel_id: str = ""
     app_encryption_key: str = "dev-encryption-key-change-in-prod!!"
     jwt_secret: str = "dev-jwt-secret"
     openai_api_key: str = ""

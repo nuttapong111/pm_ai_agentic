@@ -52,10 +52,11 @@ async def verify_line_id_token(id_token: str) -> dict[str, Any]:
         return {"sub": id_token.split(":", 1)[1], "name": "Dev User"}
 
     url = "https://api.line.me/oauth2/v2.1/verify"
+    client_id = settings.line_login_channel_id or settings.line_liff_id
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             url,
-            data={"id_token": id_token, "client_id": settings.line_liff_id},
+            data={"id_token": id_token, "client_id": client_id},
             timeout=30,
         )
     if resp.status_code != 200:
