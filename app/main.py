@@ -12,6 +12,7 @@ from app.api.router import api_router
 from app.channels.rich_menu import setup_rich_menu
 from app.config import get_settings, load_yaml_config
 from app.core.scheduler import start_scheduler, stop_scheduler
+from app.db.init_schema import ensure_database_schema
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ LIFF_DIR = Path("liff")
 async def lifespan(app: FastAPI):
     _ = load_yaml_config()
     STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+    await ensure_database_schema()
     start_scheduler()
     settings = get_settings()
     if settings.rich_menu_auto_setup and settings.line_channel_access_token:

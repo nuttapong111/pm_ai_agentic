@@ -3,6 +3,14 @@ let token = localStorage.getItem('pm_token') || '';
 let activeProject = null;
 let projects = [];
 
+function formatApiError(err) {
+  if (!err) return '';
+  const d = err.detail;
+  if (typeof d === 'string') return d;
+  if (Array.isArray(d)) return d.map((x) => x.msg || JSON.stringify(x)).join(', ');
+  return err.message || '';
+}
+
 async function api(path, opts = {}) {
   const headers = { ...(opts.headers || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -13,7 +21,8 @@ async function api(path, opts = {}) {
   const res = await fetch(API_BASE + path, { ...opts, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || err.message || res.statusText);
+    const msg = formatApiError(err) || res.statusText || `HTTP ${res.status}`;
+    throw new Error(msg);
   }
   if (res.status === 204) return null;
   return res.json();
@@ -54,6 +63,7 @@ async function init() {
       return;
     }
     const idToken = liff.getIDToken();
+    if (!idToken) throw new Error('ยังไม่ได้ login LINE — ลองปิดแล้วเปิดใหม่');
     const data = await api('/auth/line', { method: 'POST', body: { idToken } });
     token = data.accessToken;
     localStorage.setItem('pm_token', token);
@@ -73,7 +83,8 @@ async function init() {
   window.addEventListener('hashchange', render);
   render();
   } catch (e) {
-    loading.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+    const msg = (e && e.message) ? e.message : String(e || 'ไม่ทราบสาเหตุ');
+    loading.textContent = 'เกิดข้อผิดพลาด: ' + msg;
   }
 }
 

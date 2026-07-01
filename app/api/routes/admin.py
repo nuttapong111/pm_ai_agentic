@@ -2,6 +2,7 @@ from fastapi import APIRouter, Header, HTTPException, status
 
 from app.channels.rich_menu import rich_menu_status, setup_rich_menu
 from app.config import get_settings
+from app.db.init_schema import ensure_database_schema
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -60,3 +61,15 @@ async def admin_rich_menu_status(
         "appBaseUrl": settings.app_base_url,
         **status_data,
     }
+
+
+@router.post("/db/init")
+async def admin_init_database(
+    x_setup_secret: str | None = Header(default=None, alias="X-Setup-Secret"),
+) -> dict[str, str]:
+    settings = get_settings()
+    secret = settings.setup_secret or settings.jwt_secret
+    if not x_setup_secret or x_setup_secret != secret:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="secret ไม่ถูกต้อง")
+    await ensure_database_schema()
+    return {"status": "ok"}
