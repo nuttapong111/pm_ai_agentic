@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from app.config import get_settings
+from app.core.llm import chat_json, llm_available
 
 
 @dataclass
@@ -17,8 +17,7 @@ class TaskExtraction:
 
 class TaskExtractor:
     async def extract(self, raw_text: str) -> TaskExtraction:
-        settings = get_settings()
-        if settings.openai_api_key:
+        if llm_available():
             try:
                 return await self._extract_with_llm(raw_text)
             except Exception:
@@ -26,21 +25,11 @@ class TaskExtractor:
         return self._extract_with_rules(raw_text)
 
     async def _extract_with_llm(self, raw_text: str) -> TaskExtraction:
-        import json
-
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(api_key=get_settings().openai_api_key)
         prompt = f"""สกัดข้อมูลงานจากข้อความ ตอบ JSON:
 {{"title":"...", "description":"...", "assignee_name":"...", "due_date":"YYYY-MM-DD|null", "priority":"low|medium|high|urgent"}}
 
 ข้อความ: {raw_text}"""
-        response = await client.chat.completions.create(
-            model=get_settings().openai_model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-        data = json.loads(response.choices[0].message.content or "{}")
+        data = await chat_json(prompt)
         due = data.get("due_date")
         due_date = date.fromisoformat(due[:10]) if due and due != "null" else None
         return TaskExtraction(

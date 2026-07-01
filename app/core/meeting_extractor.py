@@ -1,11 +1,10 @@
-import json
 import logging
 import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 
-from app.config import get_settings
+from app.core.llm import chat_json, llm_available
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +31,7 @@ class MeetingExtractor:
     """Extract structured meeting data from free text. Uses LLM when configured, else rules."""
 
     async def extract(self, raw_text: str) -> MeetingExtraction:
-        settings = get_settings()
-        if settings.openai_api_key:
+        if llm_available():
             try:
                 return await self._extract_with_llm(raw_text)
             except Exception:
@@ -42,9 +40,6 @@ class MeetingExtractor:
         return self._extract_with_rules(raw_text)
 
     async def _extract_with_llm(self, raw_text: str) -> MeetingExtraction:
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(api_key=get_settings().openai_api_key)
         prompt = f"""สกัดข้อมูลการประชุมจากข้อความด้านล่าง ตอบเป็น JSON เท่านั้น:
 {{
   "title": "หัวข้อประชุม",
@@ -57,13 +52,7 @@ class MeetingExtractor:
 
 ข้อความ:
 {raw_text}"""
-
-        response = await client.chat.completions.create(
-            model=get_settings().openai_model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-        data = json.loads(response.choices[0].message.content or "{}")
+        data = await chat_json(prompt)
         return self._parse_llm_data(data, raw_text)
 
     def _parse_llm_data(self, data: dict[str, Any], raw_text: str) -> MeetingExtraction:

@@ -3,8 +3,12 @@
 
 import os
 import sys
+from pathlib import Path
 
-from app.channels.rich_menu import resolve_liff_url, setup_rich_menu
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from app.channels.rich_menu import liff_action_url, setup_rich_menu
 
 TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
 LIFF_ID = os.environ.get("LINE_LIFF_ID", "")
@@ -16,7 +20,7 @@ if not TOKEN:
 
 if not LIFF_ID:
     print("WARNING: ไม่มี LINE_LIFF_ID — ปุ่ม LIFF จะใช้ URL ตรง อาจไม่เปิดในแอป LINE ได้")
-    print(f"         LIFF URL ที่จะใช้: {resolve_liff_url('', BASE)}")
+    print(f"         LIFF URL ที่จะใช้: {liff_action_url('', BASE, 'projects')}")
 
 try:
     menu_id = setup_rich_menu(TOKEN, LIFF_ID, BASE)

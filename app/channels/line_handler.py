@@ -1,7 +1,7 @@
+import asyncio
 import base64
 import hashlib
 import hmac
-import json
 import logging
 from typing import Any
 
@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.channels.rich_menu import ensure_user_rich_menu_linked
 from app.config import get_settings
 from app.core.orchestrator import Orchestrator
 from app.db.models import LineContext, User
@@ -112,6 +113,14 @@ class LineWebhookHandler:
         user = await self._get_or_create_user(source.get("userId", source_id))
         line_context = await self._get_or_create_context(source_type, source_id)
 
+        line_user_id = source.get("userId")
+        if source_type == "user" and line_user_id:
+            await self._ensure_rich_menu(line_user_id)
+
+        if event_type == "follow":
+            await self._on_follow(line_user_id, event.get("replyToken"))
+            return
+
         if event_type == "message" and event.get("message", {}).get("type") == "text":
             text = event["message"]["text"]
             response = await self.orchestrator.handle_message(user, line_context, text)
@@ -154,3 +163,25 @@ class LineWebhookHandler:
         await self.db.commit()
         await self.db.refresh(ctx)
         return ctx
+
+    async def _ensure_rich_menu(self, line_user_id: str) -> None:
+        token = self.settings.line_channel_access_token
+        if not token:
+            return
+        await asyncio.to_thread(ensure_user_rich_menu_linked, token, line_user_id)
+
+    async def _on_follow(self, line_user_id: str | None, reply_token: str | None) -> None:
+        if not line_user_id:
+            return
+        await self._ensure_rich_menu(line_user_id)
+        if reply_token:
+            await self.notifier.reply(
+                reply_token,
+                [
+                    {
+                        "type": "text",
+                        "text": "สวัสดีครับ ผมคือ PM Assistant\nแตะแถบ「เมนู」ด้านล่างเพื่อใช้งาน หรือพิมพ์ข้อความได้เลย",
+                    }
+                ],
+            )
+        logger.info("Follow event handled for user %s", line_user_id)

@@ -25,8 +25,15 @@ class Settings(BaseSettings):
     line_login_channel_id: str = ""
     app_encryption_key: str = "dev-encryption-key-change-in-prod!!"
     jwt_secret: str = "dev-jwt-secret"
+
+    # LLM — default Gemini (free tier: https://aistudio.google.com/apikey)
+    llm_provider: str = "gemini"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.0-flash"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+
+    rich_menu_auto_setup: bool = True
     app_env: str = "development"
     app_base_url: str = "http://localhost:8000"
     confirmation_timeout_minutes: int = 30

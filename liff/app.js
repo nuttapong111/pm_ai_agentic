@@ -51,12 +51,15 @@ async function init() {
   activeProject = await api('/me/active-project');
   projects = await api('/projects');
 
+  const pageParam = new URLSearchParams(location.search).get('page');
+  if (pageParam) location.hash = '#/' + pageParam;
+  else if (!location.hash) location.hash = '#/dashboard';
+
   loading.classList.add('hidden');
   page.classList.remove('hidden');
   nav.classList.remove('hidden');
 
   window.addEventListener('hashchange', render);
-  if (!location.hash) location.hash = '#/dashboard';
   render();
   } catch (e) {
     loading.textContent = 'เกิดข้อผิดพลาด: ' + e.message;

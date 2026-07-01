@@ -1,13 +1,18 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+import asyncio
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
+from app.channels.rich_menu import setup_rich_menu
 from app.config import get_settings, load_yaml_config
 from app.core.scheduler import start_scheduler, stop_scheduler
+
+logger = logging.getLogger(__name__)
 
 STORAGE_DIR = Path("storage")
 LIFF_DIR = Path("liff")
@@ -18,6 +23,18 @@ async def lifespan(app: FastAPI):
     _ = load_yaml_config()
     STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     start_scheduler()
+    settings = get_settings()
+    if settings.rich_menu_auto_setup and settings.line_channel_access_token:
+        try:
+            menu_id = await asyncio.to_thread(
+                setup_rich_menu,
+                settings.line_channel_access_token,
+                settings.line_liff_id,
+                settings.app_base_url,
+            )
+            logger.info("Auto rich menu setup OK: %s", menu_id)
+        except Exception:
+            logger.exception("Auto rich menu setup failed")
     yield
     stop_scheduler()
 

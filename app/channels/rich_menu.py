@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import logging
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -16,6 +17,8 @@ HEIGHT = 1686
 ROW_H = HEIGHT // 2
 COL_W = WIDTH // 3
 
+_active_rich_menu_id: str | None = None
+
 LABELS = [
     ("โปรเจกต์", "#0f6e56"),
     ("สรุปประชุม", "#185fa5"),
@@ -25,8 +28,83 @@ LABELS = [
     ("ช่วยเหลือ", "#5f5e5a"),
 ]
 
+_FONT_PATHS = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+]
 
-def build_rich_menu_definition(liff_url: str) -> dict[str, Any]:
+
+def get_active_rich_menu_id() -> str | None:
+    return _active_rich_menu_id
+
+
+def fetch_user_rich_menu_id(channel_access_token: str, line_user_id: str) -> str | None:
+    headers = {"Authorization": f"Bearer {channel_access_token}"}
+    with httpx.Client(timeout=30) as client:
+        resp = client.get(
+            f"https://api.line.me/v2/bot/user/{line_user_id}/richmenu",
+            headers=headers,
+        )
+    if resp.status_code == 404:
+        return None
+    if resp.status_code != 200:
+        logger.warning("Fetch user rich menu failed: %s %s", resp.status_code, resp.text)
+        return None
+    return resp.json().get("richMenuId")
+
+
+def resolve_rich_menu_id(channel_access_token: str) -> str | None:
+    menu_id = get_active_rich_menu_id()
+    if menu_id:
+        return menu_id
+    return fetch_default_rich_menu_id(channel_access_token)
+
+
+def ensure_user_rich_menu_linked(channel_access_token: str, line_user_id: str) -> bool:
+    """Link default rich menu to a user if they don't have one yet."""
+    menu_id = resolve_rich_menu_id(channel_access_token)
+    if not menu_id:
+        return False
+    current = fetch_user_rich_menu_id(channel_access_token, line_user_id)
+    if current == menu_id:
+        return True
+    link_rich_menu_to_user(channel_access_token, menu_id, line_user_id)
+    return True
+
+
+def rich_menu_status(channel_access_token: str) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {channel_access_token}"}
+    with httpx.Client(timeout=30) as client:
+        listed = client.get("https://api.line.me/v2/bot/richmenu/list", headers=headers)
+        default_resp = client.get("https://api.line.me/v2/bot/user/all/richmenu", headers=headers)
+
+    menus: list[dict[str, Any]] = []
+    if listed.status_code == 200:
+        menus = listed.json().get("richmenus", [])
+
+    default_id: str | None = None
+    if default_resp.status_code == 200:
+        default_id = default_resp.json().get("richMenuId")
+
+    return {
+        "menuCount": len(menus),
+        "menus": [
+            {"richMenuId": m.get("richMenuId"), "name": m.get("name"), "selected": m.get("selected")}
+            for m in menus
+        ],
+        "defaultRichMenuId": default_id,
+        "activeInProcess": get_active_rich_menu_id(),
+    }
+
+
+def liff_action_url(liff_id: str, app_base_url: str, page: str) -> str:
+    """LINE rich menu URIs must NOT contain # fragments — use query params."""
+    if liff_id:
+        return f"https://liff.line.me/{liff_id}?page={page}"
+    return f"{app_base_url.rstrip('/')}/liff/?page={page}"
+
+
+def build_rich_menu_definition(liff_id: str, app_base_url: str) -> dict[str, Any]:
     return {
         "size": {"width": WIDTH, "height": HEIGHT},
         "selected": True,
@@ -35,7 +113,7 @@ def build_rich_menu_definition(liff_url: str) -> dict[str, Any]:
         "areas": [
             {
                 "bounds": {"x": 0, "y": 0, "width": COL_W, "height": ROW_H},
-                "action": {"type": "uri", "uri": f"{liff_url}#/projects"},
+                "action": {"type": "uri", "uri": liff_action_url(liff_id, app_base_url, "projects")},
             },
             {
                 "bounds": {"x": COL_W, "y": 0, "width": COL_W, "height": ROW_H},
@@ -51,7 +129,7 @@ def build_rich_menu_definition(liff_url: str) -> dict[str, Any]:
             },
             {
                 "bounds": {"x": COL_W, "y": ROW_H, "width": COL_W, "height": HEIGHT - ROW_H},
-                "action": {"type": "uri", "uri": f"{liff_url}#/documents"},
+                "action": {"type": "uri", "uri": liff_action_url(liff_id, app_base_url, "documents")},
             },
             {
                 "bounds": {"x": COL_W * 2, "y": ROW_H, "width": WIDTH - COL_W * 2, "height": HEIGHT - ROW_H},
@@ -61,13 +139,17 @@ def build_rich_menu_definition(liff_url: str) -> dict[str, Any]:
     }
 
 
+def _load_font() -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    for path in _FONT_PATHS:
+        if Path(path).exists():
+            return ImageFont.truetype(path, 72)
+    return ImageFont.load_default()
+
+
 def generate_rich_menu_image() -> bytes:
     img = Image.new("RGB", (WIDTH, HEIGHT), "#f7f9fb")
     draw = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", 72)
-    except OSError:
-        font = ImageFont.load_default()
+    font = _load_font()
 
     for i, (label, color) in enumerate(LABELS):
         col, row = i % 3, i // 3
@@ -87,11 +169,15 @@ def generate_rich_menu_image() -> bytes:
     return buf.getvalue()
 
 
-def resolve_liff_url(liff_id: str, app_base_url: str) -> str:
-    if liff_id:
-        return f"https://liff.line.me/{liff_id}"
-    base = app_base_url.rstrip("/")
-    return f"{base}/liff/"
+def link_rich_menu_to_user(channel_access_token: str, rich_menu_id: str, line_user_id: str) -> None:
+    headers = {"Authorization": f"Bearer {channel_access_token}"}
+    with httpx.Client(timeout=30) as client:
+        resp = client.post(
+            f"https://api.line.me/v2/bot/user/{line_user_id}/richmenu/{rich_menu_id}",
+            headers=headers,
+        )
+    if resp.status_code != 200:
+        logger.warning("Link rich menu to user failed: %s %s", resp.status_code, resp.text)
 
 
 def setup_rich_menu(
@@ -102,8 +188,8 @@ def setup_rich_menu(
     replace_existing: bool = True,
 ) -> str:
     """Create rich menu, upload image, set as default. Returns richMenuId."""
-    liff_url = resolve_liff_url(liff_id, app_base_url)
-    menu = build_rich_menu_definition(liff_url)
+    global _active_rich_menu_id
+    menu = build_rich_menu_definition(liff_id, app_base_url)
     headers_json = {"Authorization": f"Bearer {channel_access_token}", "Content-Type": "application/json"}
     image_bytes = generate_rich_menu_image()
 
@@ -142,4 +228,6 @@ def setup_rich_menu(
         if linked.status_code != 200:
             raise RuntimeError(f"Set default rich menu failed: {linked.status_code} {linked.text}")
 
+    _active_rich_menu_id = rich_menu_id
+    logger.info("Rich menu ready: %s", rich_menu_id)
     return rich_menu_id
